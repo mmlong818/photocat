@@ -200,10 +200,10 @@
     }
   },
   "welcome": {
-    "title": "Bienvenido a Lap",
+    "title": "Bienvenido a 猫叔的图",
     "description": "Tu biblioteca de fotos local. Rápida, buscable y siempre bajo tu control.",
     "add_album_title": "Comienza con un álbum nuevo",
-    "add_album_description": "Selecciona una carpeta y deja que Lap organice tus fotos y videos.",
+    "add_album_description": "Selecciona una carpeta y deja que 猫叔的图 organice tus fotos y videos.",
     "smart_album_title": "Organiza con álbumes inteligentes",
     "smart_album_description": "Usa reglas para agrupar automáticamente las fotos que cumplan tus criterios.",
     "collection_title": "Agrupa fotos en colecciones",
@@ -238,7 +238,7 @@
         "skip_once": "Omitir este archivo y continuar",
         "file_label": "Último archivo escaneado",
         "message": "El último escaneo no terminó correctamente.",
-        "message_with_file": "El escaneo anterior no finalizó correctamente.\n\nÚltimo archivo escaneado:\n{file}\n\nSi continúas, Lap omitirá este archivo una vez y reanudará el escaneo."
+        "message_with_file": "El escaneo anterior no finalizó correctamente.\n\nÚltimo archivo escaneado:\n{file}\n\nSi continúas, 猫叔的图 omitirá este archivo una vez y reanudará el escaneo."
       }
     }
   },
@@ -759,7 +759,10 @@
     },
     "new_folder": {
       "title": "Nueva carpeta",
-      "error": "No se pudo crear la carpeta."
+      "error": "No se pudo crear la carpeta.",
+      "placeholder": "Nombre de la carpeta",
+      "ok": "Crear",
+      "success": "Carpeta \"{name}\" creada."
     },
     "move_to": {
       "title": "Mover '{source}' a",
@@ -1086,7 +1089,7 @@
       "network": "Error red",
       "decode": "Error decodificación",
       "format": "Formato de vídeo no admitido o el archivo está dañado.",
-      "external_player_recommended": "Este vídeo necesita una transcodificación de compatibilidad antes de poder reproducirse aquí. Para vídeos largos, Lap recomienda utilizar un reproductor externo en lugar de esperar al procesamiento en segundo plano.",
+      "external_player_recommended": "Este vídeo necesita una transcodificación de compatibilidad antes de poder reproducirse aquí. Para vídeos largos, 猫叔的图 recomienda utilizar un reproductor externo en lugar de esperar al procesamiento en segundo plano.",
       "unsafe_webview": "Este formato de vídeo no es compatible con la reproducción.",
       "open_in_external_app": "Abrir en un reproductor externo",
       "open_in_external_app_named": "Abrir vídeo en {app}...",
@@ -1110,6 +1113,8 @@
       ],
       "theme": "Tema",
       "theme_options_light": [
+        "macOS 27 Light",
+        "Cristal Claro",
         "Por defecto",
         "Cupcake",
         "Bumblebee",
@@ -1133,6 +1138,8 @@
         "Silk"
       ],
       "theme_options_dark": [
+        "macOS 27",
+        "Cristal",
         "Por defecto",
         "Synthwave",
         "Halloween",
@@ -1316,7 +1323,7 @@
       "multilingual_model_download_message": "El modelo de búsqueda de fotos multilingüe no está instalado. Descárgalo para habilitar la búsqueda en más de 50 idiomas.",
       "download": "Descargar",
       "downloading_multilingual_model": "Descargando modelo multilingüe",
-      "multilingual_model_download_success": "El modelo de búsqueda multilingüe está listo. Reinicia Lap para usarlo.",
+      "multilingual_model_download_success": "El modelo de búsqueda multilingüe está listo. Reinicia 猫叔的图 para usarlo.",
       "multilingual_model_download_failed": "No se pudo descargar el modelo de búsqueda multilingüe",
       "similarity": "Similitud de búsqueda",
       "similarity_hint": "Controla las coincidencias visuales en búsquedas por palabras clave",

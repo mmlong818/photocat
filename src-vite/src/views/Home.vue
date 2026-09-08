@@ -11,7 +11,7 @@
     </transition>
 
     <!-- Title Bar -->
-    <TitleBar v-if="showDesktopTitleBar" titlebar="Lap" viewName="Home" :icon="iconLogo"/>
+    <TitleBar v-if="showDesktopTitleBar" titlebar="猫叔的图" viewName="Home" :icon="iconLogo"/>
 
     <!-- Main Content -->
     <div class="flex-1 flex overflow-hidden">
@@ -30,7 +30,7 @@
         @focus="uiStore.setActivePane('left-sidebar')"
       >
           <div
-            class="absolute inset-y-0 left-0 bg-base-200 rounded-box"
+            class="app-sidebar absolute inset-y-0 left-0 rounded-box"
             :class="isDraggingSplitter ? '' : 'transition-[width] duration-200 ease-in-out'"
             :style="{ width: leftPanelVisualExpanded ? leftPanelWidth : '4rem' }"
           ></div>

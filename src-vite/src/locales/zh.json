@@ -200,10 +200,10 @@
     }
   },
   "welcome": {
-    "title": "欢迎使用 Lap",
+    "title": "欢迎使用 猫叔的图",
     "description": "您的本地照片库。快速、可搜索，始终由您掌控。",
     "add_album_title": "从新建相册开始",
-    "add_album_description": "选择一个文件夹，让 Lap 为您整理照片和视频。",
+    "add_album_description": "选择一个文件夹，让 猫叔的图 为您整理照片和视频。",
     "smart_album_title": "智能整理照片",
     "smart_album_description": "使用规则自动归类符合条件的照片。",
     "collection_title": "将照片归入合集",
@@ -238,7 +238,7 @@
         "skip_once": "跳过这个文件并继续",
         "file_label": "最后扫描的文件",
         "message": "上一次扫描没有正常退出。",
-        "message_with_file": "上一次扫描没有正常退出。\n\n最后扫描的文件：\n{file}\n\n如果继续，Lap 将跳过该文件一次并恢复扫描。"
+        "message_with_file": "上一次扫描没有正常退出。\n\n最后扫描的文件：\n{file}\n\n如果继续，猫叔的图 将跳过该文件一次并恢复扫描。"
       }
     }
   },
@@ -759,7 +759,10 @@
     },
     "new_folder": {
       "title": "新建文件夹",
-      "error": "创建文件夹失败。"
+      "error": "创建文件夹失败。",
+      "placeholder": "文件夹名称",
+      "ok": "创建",
+      "success": "已创建文件夹「{name}」。"
     },
     "move_to": {
       "title": "移动 '{source}' 到",
@@ -1086,7 +1089,7 @@
       "network": "网络错误导致视频下载失败",
       "decode": "视频解码错误",
       "format": "视频格式暂不支持，或者文件已损坏。",
-      "external_player_recommended": "该视频需要先做兼容转码后才能在这里播放。对于长视频，Lap 更建议直接使用外部播放器，而不是等待后台处理。",
+      "external_player_recommended": "该视频需要先做兼容转码后才能在这里播放。对于长视频，猫叔的图 更建议直接使用外部播放器，而不是等待后台处理。",
       "unsafe_webview": "不支持播放此视频格式。",
       "open_in_external_app": "使用外部播放器打开",
       "open_in_external_app_named": "在 {app} 中打开...",
@@ -1110,6 +1113,8 @@
       ],
       "theme": "主题",
       "theme_options_light": [
+        "macOS 27 Light",
+        "琉璃·浅",
         "默认",
         "纸杯蛋糕",
         "大黄蜂",
@@ -1133,6 +1138,8 @@
         "丝绸"
       ],
       "theme_options_dark": [
+        "macOS 27",
+        "琉璃",
         "默认",
         "合成波",
         "万圣节",
@@ -1316,7 +1323,7 @@
       "multilingual_model_download_message": "多语言照片搜索模型尚未安装。下载后可支持 50+ 语言搜索。",
       "download": "下载",
       "downloading_multilingual_model": "正在下载多语言模型",
-      "multilingual_model_download_success": "多语言搜索模型已就绪。重启 Lap 后生效。",
+      "multilingual_model_download_success": "多语言搜索模型已就绪。重启 猫叔的图 后生效。",
       "multilingual_model_download_failed": "多语言搜索模型下载失败",
       "similarity": "搜索相似度",
       "similarity_hint": "控制关键词搜索中的视觉匹配",

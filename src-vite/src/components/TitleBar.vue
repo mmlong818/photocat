@@ -1,9 +1,9 @@
 <template>
 
   <!-- Custom Title Bar -->
-  <div 
+  <div
     :class="[
-      'w-full flex items-center justify-between select-none cursor-default',
+      'w-full flex items-center justify-between select-none cursor-default bg-base-100/30 backdrop-blur-xl',
       viewName==='ImageViewer' ? 'h-12' : 'h-10',
     ]"
     @contextmenu.prevent
@@ -12,7 +12,7 @@
     <!-- Title Name -->
     <!-- Icon & Title Container -->
     <div v-if="isMac" class="flex-1" data-tauri-drag-region></div>
-    <div 
+    <div
       :class="[
         'flex items-center overflow-hidden',
         showDesktopWindowControls ? 'ml-2' : '',
@@ -21,16 +21,16 @@
       data-tauri-drag-region
     >
       <!-- Icon -->
-      <img 
-        v-if="icon" 
-        :src="icon" 
-        class="w-5 h-5 mr-2 select-none rounded" 
-        data-tauri-drag-region 
+      <img
+        v-if="icon"
+        :src="icon"
+        class="w-5 h-5 mr-2 select-none rounded"
+        data-tauri-drag-region
       />
-      
+
       <!-- Title Name -->
-      <span 
-        class="text-nowrap text-base-content/70 overflow-hidden whitespace-pre text-ellipsis"
+      <span
+        class="text-nowrap text-base-content/70 overflow-hidden whitespace-pre text-ellipsis neon-text"
         data-tauri-drag-region
       >
         {{ titlebar }}
@@ -50,17 +50,17 @@
 
     <!-- Window Control Buttons -->
     <div v-if="showDesktopWindowControls" class="h-10 mb-auto flex items-center" @mousedown.stop>
-      <IconWinMinus v-if="resizable" 
-        class="p-3 w-12 h-full text-base-content/70 hover:text-base-content hover:bg-base-100 transition-colors duration-300" 
-        @click.stop="minimizeWindow" 
+      <IconWinMinus v-if="resizable"
+        class="p-3 w-12 h-full text-base-content/70 hover:text-base-content hover:bg-base-100 transition-colors duration-300"
+        @click.stop="minimizeWindow"
       />
-      <component v-if="resizable" :is="isMaximized ? IconWinRestore : IconWinMaximize" 
-        class="p-3 w-12 h-full text-base-content/70 hover:text-base-content hover:bg-base-100 transition-colors duration-300" 
-        @click.stop="toggleMaximizeWindow" 
+      <component v-if="resizable" :is="isMaximized ? IconWinRestore : IconWinMaximize"
+        class="p-3 w-12 h-full text-base-content/70 hover:text-base-content hover:bg-base-100 transition-colors duration-300"
+        @click.stop="toggleMaximizeWindow"
       />
-      <IconClose 
-        class="p-3 w-12 h-full text-base-content/70 hover:text-base-content hover:bg-red-500 transition-colors duration-300" 
-        @click.stop="closeWindow" 
+      <IconClose
+        class="p-3 w-12 h-full text-base-content/70 hover:text-base-content hover:bg-red-500 transition-colors duration-300"
+        @click.stop="closeWindow"
       />
     </div>
 
@@ -75,11 +75,11 @@ import { emit } from '@tauri-apps/api/event';
 import { getCurrentWindow  } from '@tauri-apps/api/window';
 import { isWin, isMac, isLinux } from '@/common/utils';
 
-import { 
+import {
   IconWinMinus,
   IconWinMaximize,
   IconWinRestore,
-  IconClose 
+  IconClose
 } from '@/common/icons';
 
 const props = defineProps({
@@ -107,7 +107,7 @@ const appWindow = getCurrentWindow();
 const isMaximized = ref(false);
 const showDesktopWindowControls = isWin || isLinux;
 
-watch(() => searchValue.value, (newValue) => { 
+watch(() => searchValue.value, (newValue) => {
   console.log('searchValue:', newValue);
   emit('message-from-titlebar', { message: 'search', search: searchValue.value });
 });

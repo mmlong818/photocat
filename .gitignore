@@ -12,3 +12,8 @@ set_db_version.py
 set_version.py
 publish_release.sh
 release-downloads.sh
+
+# local build artifacts / portable tooling
+Lap-*/
+cmake-portable/
+magick-portable.zip

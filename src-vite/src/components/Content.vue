@@ -24,7 +24,7 @@
     <!-- title bar -->
     <div
       v-if="!showWelcomeContent"
-      class="absolute top-0 left-0 right-0 px-2 h-12 flex flex-row flex-nowrap items-center justify-between bg-base-300 z-30 overflow-hidden"
+      class="content-toolbar absolute top-0 left-0 right-0 px-2 h-12 flex flex-row flex-nowrap items-center justify-between bg-base-300 z-30 overflow-hidden"
       data-tauri-drag-region
     >
       <!-- title -->
@@ -243,6 +243,7 @@
                 @item-drag-start="markContentInternalDrag"
                 @item-drag="updateContentDragPosition"
                 @item-drag-end="clearContentInternalDrag"
+                @background-contextmenu="handleBackgroundContextMenu"
               />
               <!-- Navigation buttons -->
               <div v-if="!showWelcomeContent && config.settings.grid.showFilmStrip && fileList.length > 0" 
@@ -330,7 +331,7 @@
 
         <!-- Quick View Overlay -->
         <div v-if="showQuickView && fileList[selectedItemIndex]" 
-          class="absolute inset-0 z-60 flex items-center justify-center bg-base-200/95 backdrop-blur-lg overflow-hidden"
+          class="content-quickview absolute inset-0 z-60 flex items-center justify-center bg-base-200/95 backdrop-blur-lg overflow-hidden"
           :class="[ config.settings.showStatusBar ? 'mt-12 mb-8': 'mt-12' ]"
         >
           <div
@@ -422,7 +423,7 @@
       >
         <div
           :class="[
-            'absolute right-0 z-40 pr-1 transition-transform duration-200 ease-in-out',
+            'info-panel-glass absolute right-0 z-40 pr-1 transition-transform duration-200 ease-in-out',
             rightPanelVisualVisible ? 'translate-x-0' : 'translate-x-full pointer-events-none',
           ]"
           :style="{ width: activeRightPanelWidth + 'px', top: '3rem', bottom: config.settings.showStatusBar ? '2rem' : '0.25rem' }"
@@ -530,6 +531,22 @@
     @ok="onRenameFile"
     @cancel="showRenameMsgbox = false"
     @reset="errorMessage = ''"
+  />
+
+  <!-- new folder (grid background right-click) -->
+  <MessageBox
+    v-if="showNewFolderMsgbox"
+    :title="$t('msgbox.new_folder.title')"
+    :showInput="true"
+    :inputText="newFolderName"
+    :inputPlaceholder="$t('msgbox.new_folder.placeholder')"
+    :needValidateInput="true"
+    :OkText="$t('msgbox.new_folder.ok')"
+    :cancelText="$t('msgbox.cancel')"
+    :errorMessage="newFolderError"
+    @ok="onNewFolderOk"
+    @cancel="showNewFolderMsgbox = false"
+    @reset="newFolderError = ''"
   />
 
   <!-- move to -->
@@ -696,6 +713,19 @@
       <template #trigger><span></span></template>
     </ContextMenu>
   </div>
+
+  <!-- Right-click menu for the grid background (empty area). Currently offers
+       "new folder" while browsing a real folder; the trigger is empty and the
+       menu is opened at cursor coordinates by handleBackgroundContextMenu. -->
+  <div class="hidden">
+    <ContextMenu
+      ref="backgroundMenuRef"
+      :iconMenu="null"
+      :menuItems="backgroundMenuItems"
+    >
+      <template #trigger><span></span></template>
+    </ContextMenu>
+  </div>
 </template>
 
 <script setup lang="ts">
@@ -715,7 +745,7 @@ import { getAlbum, getAllAlbums, recountAlbum, getQueryCountAndSum, getQueryTime
          updateFileInfo, importFile, importUrl, importFileBytes, getDragPayload, importClipboard, addFileToDb, checkFileExists, cancelIndexing as cancelIndexingApi, selectFolder, getFacesForFile, listenFaceIndexProgress,
          openFilesWithApp, getAppConfig, getIndexRecoveryInfo, clearIndexRecoveryInfo, setLastSelectedItemIndex,
          dedupDeleteSelected, getQueryFilePosition, getFolderSearchExcluded,
-         listCollections, createCollection, addFilesToCollection, removeFilesFromCollection, getCollectionCountAndSum, getCollectionFiles, getCollectionGroupedQueryRows, getCollectionGroupFileIds, getCollectionQueryFileIds, fetchFolder, isDirectoryAccessible, addTagToFile } from '@/common/api';
+         listCollections, createCollection, addFilesToCollection, removeFilesFromCollection, getCollectionCountAndSum, getCollectionFiles, getCollectionGroupedQueryRows, getCollectionGroupFileIds, getCollectionQueryFileIds, fetchFolder, isDirectoryAccessible, addTagToFile, createFolder } from '@/common/api';
 import { config, libConfig } from '@/common/config';
 import {
   gridSizeFromPosition,
@@ -733,7 +763,7 @@ import { isWin, isMac, isLinux, setTheme, separator,
          getCachedThumbnailDataUrl,
          clearCachedThumbnailDataUrl,
          extractFileName, combineFileName, getFolderPath, getFolderName, getSelectOptions, 
-         shortenFilename, getSlideShowInterval, getFullPath, normalizePathForCompare, isWithinRootPath, shouldUseBackendPreview } from '@/common/utils';
+         shortenFilename, getSlideShowInterval, getFullPath, normalizePathForCompare, isWithinRootPath, shouldUseBackendPreview, isValidFileName } from '@/common/utils';
 
 import DropDownSelect from '@/components/DropDownSelect.vue';
 import ProgressBar from '@/components/ProgressBar.vue';
@@ -805,6 +835,7 @@ import {
   IconSortingAsc,
   IconSortingDesc,
   IconFilter,
+  IconNewFolder,
 } from '@/common/icons';
 
 const thumbnailPlaceholder = new URL('@/assets/images/image-file.png', import.meta.url).href;
@@ -1069,6 +1100,67 @@ function removeDeletedFilesFromImageViewerSession(fileIds: number[]) {
 
 const selectionMenuRef = ref<InstanceType<typeof ContextMenu> | null>(null);
 const selectionMenuIndex = ref(-1);
+
+// —— Grid background right-click menu (new folder while browsing a folder) ——
+const backgroundMenuRef = ref<InstanceType<typeof ContextMenu> | null>(null);
+
+// The parent for a new folder is the folder currently browsed. Empty unless a
+// real folder query is active (album folder view / folder browse / folder search).
+const browsedFolderPath = computed(() =>
+  String(currentQueryParams.value.searchFolder || currentQueryParams.value.searchAllSubfolders || ''));
+
+const backgroundMenuItems = computed(() => [
+  {
+    label: t('menu.file.new_folder'),
+    icon: IconNewFolder,
+    hidden: !browsedFolderPath.value,
+    action: () => { openNewFolderMsgbox(); }
+  }
+]);
+
+function handleBackgroundContextMenu({ x, y }: { x: number; y: number }) {
+  const items = backgroundMenuItems.value ?? [];
+  if (!items.some((m: any) => !m.hidden)) return;
+  backgroundMenuRef.value?.open?.(x, y);
+}
+
+const showNewFolderMsgbox = ref(false);
+const newFolderName = ref('');
+const newFolderError = ref('');
+const isNewFolderRequest = ref(false);
+
+function openNewFolderMsgbox() {
+  newFolderName.value = '';
+  newFolderError.value = '';
+  showNewFolderMsgbox.value = true;
+}
+
+async function onNewFolderOk(nameArg: string) {
+  if (isNewFolderRequest.value) return;
+  const parent = browsedFolderPath.value;
+  const name = String(nameArg || newFolderName.value || '').trim();
+  if (!parent || !name || !isValidFileName(name)) return;
+
+  isNewFolderRequest.value = true;
+  const newPath = await createFolder(parent, name);
+  isNewFolderRequest.value = false;
+  if (!newPath) {
+    newFolderError.value = t('msgbox.new_folder.error');
+    return;
+  }
+
+  showNewFolderMsgbox.value = false;
+  toast.success(t('msgbox.new_folder.success', { name }));
+
+  // Refresh the sidebar folder tree of the album being browsed so the new
+  // subfolder shows up (fresh album object keeps totals intact downstream).
+  const albumId = Number(libConfig.album.id || 0);
+  if (albumId > 0) {
+    const album = await getAlbum(albumId);
+    if (album) await tauriEmit('albums-refreshed', { albums: [album], refreshFolders: true });
+  }
+}
+
 const selectionMenuItems = useFileMenuItems(
   ref<any>(null),
   localeMsg,
@@ -3409,6 +3501,10 @@ async function handleItemSelectToggled(index: number, shiftKey: boolean = false)
   if (!ensureGroupedFileAtIndex(index)) return;
   const targetItem = fileList.value[index];
   if (!targetItem) return;
+
+  if (!selectMode.value) {
+    handleSelectMode(true);
+  }
 
   if (shiftKey && lastSelectedIndex.value !== -1 && lastSelectedIndex.value !== index) {
     // Range selection: select all items between lastSelectedIndex and index

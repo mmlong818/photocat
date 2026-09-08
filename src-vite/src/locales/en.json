@@ -200,10 +200,10 @@
     }
   },
   "welcome": {
-    "title": "Welcome to Lap",
+    "title": "Welcome to 猫叔的图",
     "description": "Your local photo library. Fast, searchable, and always under your control.",
     "add_album_title": "Start with a new album",
-    "add_album_description": "Select a folder and let Lap organize your photos and videos.",
+    "add_album_description": "Select a folder and let 猫叔的图 organize your photos and videos.",
     "smart_album_title": "Organize with smart albums",
     "smart_album_description": "Use rules to automatically group photos that match your criteria.",
     "collection_title": "Group photos in collections",
@@ -238,7 +238,7 @@
         "skip_once": "Skip this file and continue",
         "file_label": "Last scanned file",
         "message": "The previous scan did not close normally.",
-        "message_with_file": "The previous scanning task did not exit cleanly.\n\nLast scanned file:\n{file}\n\nIf you continue, Lap will skip this file once and resume scanning."
+        "message_with_file": "The previous scanning task did not exit cleanly.\n\nLast scanned file:\n{file}\n\nIf you continue, 猫叔的图 will skip this file once and resume scanning."
       }
     }
   },
@@ -759,7 +759,10 @@
     },
     "new_folder": {
       "title": "New folder",
-      "error": "Failed to create folder."
+      "error": "Failed to create folder.",
+      "placeholder": "Folder name",
+      "ok": "Create",
+      "success": "Folder \"{name}\" created."
     },
     "move_to": {
       "title": "Move '{source}' to",
@@ -1086,7 +1089,7 @@
       "network": "Network error while loading video",
       "decode": "Video decoding error",
       "format": "Unsupported video format or the file is corrupted.",
-      "external_player_recommended": "This video needs compatibility transcoding before it can play here. For long videos, Lap recommends using an external player instead of waiting for background processing.",
+      "external_player_recommended": "This video needs compatibility transcoding before it can play here. For long videos, 猫叔的图 recommends using an external player instead of waiting for background processing.",
       "unsafe_webview": "This video format is not supported for playback.",
       "open_in_external_app": "Open in external player",
       "open_in_external_app_named": "Open video in {app}...",
@@ -1110,6 +1113,8 @@
       ],
       "theme": "Theme",
       "theme_options_light": [
+        "macOS 27 Light",
+        "Glass Light",
         "Default",
         "Cupcake",
         "Bumblebee",
@@ -1133,6 +1138,8 @@
         "Silk"
       ],
       "theme_options_dark": [
+        "macOS 27",
+        "Glass",
         "Default",
         "Synthwave",
         "Halloween",
@@ -1316,7 +1323,7 @@
       "multilingual_model_download_message": "The multilingual photo search model is not installed. Download it to enable search in 50+ languages.",
       "download": "Download",
       "downloading_multilingual_model": "Downloading multilingual model",
-      "multilingual_model_download_success": "Multilingual search model is ready. Restart Lap to use it.",
+      "multilingual_model_download_success": "Multilingual search model is ready. Restart 猫叔的图 to use it.",
       "multilingual_model_download_failed": "Failed to download multilingual search model",
       "similarity": "Search similarity",
       "similarity_hint": "Controls visual matches for keyword searches",

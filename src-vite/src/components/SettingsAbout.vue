@@ -7,7 +7,7 @@
         <img :src="iconLogo" class="w-20 h-20 select-none [-webkit-app-region:no-drag]" draggable="false" />
       </div>
       <div class="flex flex-col text-left">
-        <h3 class="text-xl">{{ packageInfo.name }}</h3>
+        <h3 class="text-xl">猫叔的图 <span class="text-xs opacity-50 ml-1">{{ packageInfo.name }} v{{ packageInfo.version }}</span></h3>
         <p class="mt-2 text-sm">{{ $t('settings.about.package.app_description') }}</p>
       </div>
     </div>

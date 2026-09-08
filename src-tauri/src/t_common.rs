@@ -5,6 +5,8 @@
 // Image support
 pub const NORMAL_IMGS: &[&str] = &[
     "jpg", "jpeg", "jfif", "png", "gif", "bmp", "tif", "tiff", "webp", "avif", "heic", "heif", "hif", "jxl",
+    "ico", // Windows icon files (multi-size); decoded by the image crate
+    "pbm", "pgm", "ppm", "pam", // Netpbm family; decoded by the image crate
 ];
 
 // Image formats decoded through the bundled FFmpeg sidecar.
@@ -17,6 +19,7 @@ pub const FFMPEG_BACKED_IMGS: &[&str] = &[
     "qoi",  // Fast lossless format (2021); ecosystem still immature
     "jp2", "j2k", "j2c", "jpc", "jpf", "jpx", // JPEG 2000 family; medical/satellite use only
     "dpx", // Digital cinema intermediate format; niche film/grading pipeline only
+    "fits", "fit", "fts", // Flexible Image Transport System; astronomy imagery, decoded via FFmpeg sidecar
 ];
 
 // RAW support

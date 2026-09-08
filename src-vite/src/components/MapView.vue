@@ -75,7 +75,7 @@ const props = defineProps({
   },
   label: {
     type: String,
-    default: 'Lap',
+    default: '猫叔的图',
   },
 })
 
@@ -225,7 +225,7 @@ function updateTheme() {
 
 async function openAppleMaps() {
   if (!showAppleMapsButton.value) return
-  const label = props.label?.trim() || 'Lap'
+  const label = props.label?.trim() || '猫叔的图'
   const url = `maps://?ll=${props.lat},${props.lon}&q=${encodeURIComponent(label)}`
   await openExternalUrl(url)
 }

@@ -6,6 +6,413 @@
   logs: false;
 }
 
+/* 「琉璃·浅」macOS 浅色主题：米白分层 + 系统蓝 */
+@plugin "daisyui/theme" {
+  name: "maoshu-light";
+  default: false;
+  color-scheme: light;
+
+  --color-base-100: oklch(100% 0 0);       /* 卡片/内容面：纯白 */
+  --color-base-200: oklch(96.5% 0.004 260); /* 侧栏：浅灰 */
+  --color-base-300: oklch(93% 0.005 260);   /* 窗体/分组底：中浅灰 */
+  --color-base-content: oklch(20% 0.015 260);
+
+  --color-primary: oklch(55% 0.21 258);     /* macOS 系统蓝 */
+  --color-primary-content: oklch(98% 0.01 258);
+  --color-secondary: oklch(60% 0.17 300);
+  --color-secondary-content: oklch(98% 0.01 300);
+  --color-accent: oklch(66% 0.13 195);
+  --color-accent-content: oklch(15% 0.03 200);
+  --color-neutral: oklch(88% 0.006 260);
+  --color-neutral-content: oklch(25% 0.015 260);
+
+  --color-info: oklch(62% 0.15 240);
+  --color-info-content: oklch(98% 0.01 240);
+  --color-success: oklch(65% 0.17 145);
+  --color-success-content: oklch(98% 0.01 145);
+  --color-warning: oklch(80% 0.15 85);
+  --color-warning-content: oklch(25% 0.05 85);
+  --color-error: oklch(58% 0.21 25);
+  --color-error-content: oklch(98% 0.01 25);
+
+  --color-radius-selector: 0.5rem;
+  --color-radius-field: 0.5rem;
+  --color-radius-box: 0.75rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+/* 「琉璃」macOS 风格深色主题：近中性深灰基底 + macOS 系统色 */
+@plugin "daisyui/theme" {
+  name: "maoshu";
+  default: false;
+  color-scheme: dark;
+
+  --color-base-100: oklch(28% 0.01 260); /* 内容区最亮 */
+  --color-base-200: oklch(22% 0.01 260); /* 面板 */
+  --color-base-300: oklch(18% 0.008 260); /* 窗体外框最暗 */
+  --color-base-content: oklch(96% 0.004 260);
+
+  --color-primary: oklch(62% 0.19 258);            /* macOS 系统蓝 */
+  --color-primary-content: oklch(98% 0.01 258);
+  --color-secondary: oklch(70% 0.15 300);          /* 系统紫 */
+  --color-secondary-content: oklch(15% 0.02 300);
+  --color-accent: oklch(72% 0.12 195);             /* 系统青 */
+  --color-accent-content: oklch(16% 0.03 200);
+  --color-neutral: oklch(32% 0.01 260);
+  --color-neutral-content: oklch(90% 0.01 260);
+
+  --color-info: oklch(66% 0.15 240);
+  --color-info-content: oklch(98% 0.01 240);
+  --color-success: oklch(75% 0.18 145);            /* 系统绿 */
+  --color-success-content: oklch(18% 0.04 145);
+  --color-warning: oklch(85% 0.16 95);             /* 系统黄 */
+  --color-warning-content: oklch(24% 0.05 95);
+  --color-error: oklch(64% 0.2 25);                /* 系统红 */
+  --color-error-content: oklch(98% 0.01 25);
+
+  --color-radius-selector: 0.5rem;
+  --color-radius-field: 0.5rem;
+  --color-radius-box: 0.75rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   macOS 27 未来感主题
+   ═══════════════════════════════════════════════════════════════ */
+
+/* 「macOS 27」深色主题：深空蓝紫基底 + 霓虹系统色 */
+@plugin "daisyui/theme" {
+  name: "macos27";
+  default: false;
+  color-scheme: dark;
+
+  --color-base-100: oklch(26% 0.025 265);  /* 内容面：深空蓝紫 */
+  --color-base-200: oklch(21% 0.022 265);  /* 面板 */
+  --color-base-300: oklch(16% 0.018 265);  /* 窗体外框 */
+  --color-base-content: oklch(95% 0.006 265);
+
+  --color-primary: oklch(68% 0.23 255);    /* 霓虹系统蓝 */
+  --color-primary-content: oklch(98% 0.01 255);
+  --color-secondary: oklch(72% 0.18 300);  /* 霓虹紫 */
+  --color-secondary-content: oklch(14% 0.03 300);
+  --color-accent: oklch(74% 0.16 195);     /* 霓虹青 */
+  --color-accent-content: oklch(14% 0.03 200);
+  --color-neutral: oklch(34% 0.02 265);
+  --color-neutral-content: oklch(92% 0.01 265);
+
+  --color-info: oklch(70% 0.18 240);
+  --color-info-content: oklch(98% 0.01 240);
+  --color-success: oklch(76% 0.19 145);    /* 霓虹绿 */
+  --color-success-content: oklch(14% 0.04 145);
+  --color-warning: oklch(86% 0.18 95);     /* 霓虹黄 */
+  --color-warning-content: oklch(22% 0.05 95);
+  --color-error: oklch(66% 0.22 25);       /* 霓虹红 */
+  --color-error-content: oklch(98% 0.01 25);
+
+  --color-radius-selector: 0.75rem;
+  --color-radius-field: 0.75rem;
+  --color-radius-box: 1.25rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+/* 「macOS 27」浅色主题：冷白分层 + 鲜蓝 */
+@plugin "daisyui/theme" {
+  name: "macos27-light";
+  default: false;
+  color-scheme: light;
+
+  --color-base-100: oklch(99% 0.006 255);  /* 卡片/内容：冷白 */
+  --color-base-200: oklch(95% 0.01 255);   /* 侧栏 */
+  --color-base-300: oklch(90% 0.012 255);  /* 窗体底 */
+  --color-base-content: oklch(22% 0.02 255);
+
+  --color-primary: oklch(58% 0.22 255);    /* 鲜蓝 */
+  --color-primary-content: oklch(98% 0.01 255);
+  --color-secondary: oklch(62% 0.18 300);  /* 紫 */
+  --color-secondary-content: oklch(98% 0.01 300);
+  --color-accent: oklch(68% 0.14 195);     /* 青 */
+  --color-accent-content: oklch(14% 0.03 200);
+  --color-neutral: oklch(88% 0.008 255);
+  --color-neutral-content: oklch(26% 0.015 255);
+
+  --color-info: oklch(64% 0.16 240);
+  --color-info-content: oklch(98% 0.01 240);
+  --color-success: oklch(66% 0.18 145);
+  --color-success-content: oklch(98% 0.01 145);
+  --color-warning: oklch(82% 0.16 85);
+  --color-warning-content: oklch(24% 0.05 85);
+  --color-error: oklch(60% 0.22 25);
+  --color-error-content: oklch(98% 0.01 25);
+
+  --color-radius-selector: 0.75rem;
+  --color-radius-field: 0.75rem;
+  --color-radius-box: 1.25rem;
+  --size-selector: 0.25rem;
+  --size-field: 0.25rem;
+  --border: 1px;
+  --depth: 0;
+  --noise: 0;
+}
+
+/* 全局字体：SF Pro 优先（macOS），回退系统几何无衬线，数字等宽 */
+html {
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI Variable Text",
+    "Segoe UI", "MiSans", "PingFang SC", "Microsoft YaHei UI", "Noto Sans SC", system-ui,
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* —— macOS 交通灯窗口控制 —— */
+.tl-group {
+  height: 100%;
+  min-height: 2.5rem;
+}
+
+.mac-tl {
+  width: 12px;
+  height: 12px;
+  border-radius: 9999px;
+  border: 1px solid oklch(0% 0 0 / 0.12);
+  padding: 0;
+  position: relative;
+  cursor: default;
+  box-shadow: inset 0 0 0 0.5px oklch(100% 0 0 / 0.18);
+}
+
+.mac-tl::before {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 800;
+  line-height: 1;
+  color: oklch(0% 0 0 / 0.55);
+  opacity: 0;
+  transition: opacity 0.12s ease;
+}
+
+.tl-group:hover .mac-tl::before {
+  opacity: 1;
+}
+
+.mac-tl-close {
+  background: #ff5f57;
+}
+
+.mac-tl-close::before {
+  content: '×';
+  font-size: 11px;
+  margin-top: -1px;
+}
+
+.mac-tl-min {
+  background: #febc2e;
+}
+
+.mac-tl-min::before {
+  content: '−';
+  font-size: 10px;
+  margin-top: -2px;
+}
+
+.mac-tl-max {
+  background: #28c840;
+}
+
+.mac-tl-max::before {
+  content: '';
+  width: 8px;
+  height: 8px;
+  margin: 2px auto auto 2px;
+  border-radius: 1px;
+  background:
+    linear-gradient(to bottom right, oklch(0% 0 0 / 0.55) 0 20%, transparent 20% 42%, oklch(0% 0 0 / 0.55) 42% 58%, transparent 58% 78%, oklch(0% 0 0 / 0.55) 78%);
+  opacity: 0.9;
+}
+
+.tl-group:hover .mac-tl-max::before {
+  opacity: 0.9;
+}
+
+/* —— 玻璃拟态表面：浮层/弹窗/下拉/提示 —— */
+[data-theme="maoshu"] .modal-box,
+[data-theme="maoshu"] .dropdown-content {
+  background: color-mix(in srgb, var(--color-base-100) 68%, transparent);
+  backdrop-filter: blur(22px) saturate(1.5);
+  -webkit-backdrop-filter: blur(22px) saturate(1.5);
+  border: 1px solid color-mix(in srgb, white 9%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 7%, transparent),
+    0 12px 40px -8px oklch(10% 0.03 255 / 0.65);
+}
+
+[data-theme="maoshu"] .tooltip::before,
+[data-theme="maoshu"] .tooltip::after {
+  background: color-mix(in srgb, var(--color-base-300) 80%, transparent);
+  backdrop-filter: blur(12px);
+  border: 1px solid color-mix(in srgb, white 8%, transparent);
+}
+
+[data-theme="maoshu"] .tooltip::before {
+  border-right-color: color-mix(in srgb, white 8%, transparent);
+}
+
+[data-theme="maoshu"] .tooltip::after {
+  border-right-color: transparent;
+}
+
+/* 侧栏面板玻璃化：叠在内容之上时透出底色 */
+[data-theme="maoshu"] .bg-base-200 {
+  background-color: color-mix(in srgb, var(--color-base-200) 88%, transparent);
+  backdrop-filter: blur(18px) saturate(1.35);
+  -webkit-backdrop-filter: blur(18px) saturate(1.35);
+}
+
+/* macOS 侧栏振动玻璃：深色比内容区亮一档，浅色比内容区灰一档 */
+[data-theme="maoshu"] .app-sidebar {
+  background: color-mix(in srgb, var(--color-base-100) 55%, var(--color-base-300) 45%);
+  backdrop-filter: blur(24px) saturate(1.4);
+  -webkit-backdrop-filter: blur(24px) saturate(1.4);
+  border-right: 1px solid color-mix(in srgb, white 7%, transparent);
+  box-shadow: inset 0 1px 0 color-mix(in srgb, white 4%, transparent);
+}
+
+[data-theme="maoshu-light"] .app-sidebar {
+  background: color-mix(in srgb, var(--color-base-200) 92%, transparent);
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  border-right: 1px solid oklch(80% 0.008 260 / 0.9);
+}
+
+[data-theme="maoshu-light"] .modal-box,
+[data-theme="maoshu-light"] .dropdown-content {
+  background: color-mix(in srgb, white 82%, transparent);
+  backdrop-filter: blur(22px) saturate(1.4);
+  -webkit-backdrop-filter: blur(22px) saturate(1.4);
+  border: 1px solid oklch(80% 0.008 260 / 0.8);
+  box-shadow: 0 12px 40px -8px oklch(40% 0.02 260 / 0.25);
+}
+
+[data-theme="maoshu-light"] .sidebar-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, var(--color-base-content) 45%, transparent);
+}
+
+[data-theme="maoshu-light"] .sidebar-item-selected {
+  background: color-mix(in srgb, var(--color-primary) 14%, transparent);
+  color: var(--color-primary);
+  border-radius: 0.375rem;
+}
+
+[data-theme="maoshu-light"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+[data-theme="maoshu-light"] ::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-base-content) 18%, transparent);
+}
+
+[data-theme="maoshu-light"] ::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--color-base-content) 32%, transparent);
+}
+
+[data-theme="maoshu-light"] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* 弱化文字的可见度下限：macOS secondaryLabel 级别，避免深色下一团黑 */
+[data-theme="maoshu"] .text-base-content\/30 {
+  color: color-mix(in srgb, var(--color-base-content) 58%, transparent);
+}
+
+[data-theme="maoshu"] .text-base-content\/40 {
+  color: color-mix(in srgb, var(--color-base-content) 64%, transparent);
+}
+
+[data-theme="maoshu"] .text-base-content\/50 {
+  color: color-mix(in srgb, var(--color-base-content) 70%, transparent);
+}
+
+[data-theme="maoshu"] .text-base-content\/60 {
+  color: color-mix(in srgb, var(--color-base-content) 76%, transparent);
+}
+
+[data-theme="maoshu"] .text-base-content\/70 {
+  color: color-mix(in srgb, var(--color-base-content) 82%, transparent);
+}
+
+/* 主按钮：macOS 蓝按钮质感 */
+[data-theme="maoshu"] .btn-primary {
+  box-shadow: inset 0 1px 0 oklch(100% 0 0 / 18%);
+}
+
+/* 侧栏选中项：macOS 圆角高亮块 */
+[data-theme="maoshu"] .sidebar-item-selected {
+  box-shadow: none;
+  background: color-mix(in srgb, var(--color-primary) 18%, transparent);
+  color: var(--color-primary);
+  border-radius: 0.375rem;
+}
+
+/* 侧栏分组标签：macOS 小型大写标签 */
+[data-theme="maoshu"] .sidebar-section-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, var(--color-base-content) 35%, transparent);
+}
+
+/* 按压反馈与焦点环 */
+.btn:not(.btn-disabled):active {
+  transform: scale(0.97);
+  transition: transform 0.08s ease;
+}
+
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--color-primary) 75%, transparent);
+  outline-offset: 1px;
+}
+
+/* 细滚动条 */
+[data-theme="maoshu"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+[data-theme="maoshu"] ::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-base-content) 14%, transparent);
+}
+
+[data-theme="maoshu"] ::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--color-base-content) 26%, transparent);
+}
+
+[data-theme="maoshu"] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
 html, body {
   overscroll-behavior: none;
 }
@@ -211,4 +618,283 @@ html, body {
   font-weight: 700;
   line-height: 14px;
   text-align: center;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   macOS 27 全局动效与发光工具
+   ═══════════════════════════════════════════════════════════════ */
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 6px -2px var(--glow-color, var(--color-primary)); }
+  50% { box-shadow: 0 0 16px -2px var(--glow-color, var(--color-primary)); }
+}
+
+@keyframes fade-in-up {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@utility glass-panel {
+  background: color-mix(in srgb, var(--color-base-100) 62%, transparent);
+  backdrop-filter: blur(28px) saturate(1.55);
+  -webkit-backdrop-filter: blur(28px) saturate(1.55);
+  border: 1px solid color-mix(in srgb, white 10%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 8%, transparent),
+    0 16px 48px -12px oklch(12% 0.04 265 / 0.7);
+}
+
+@utility glass-strong {
+  background: color-mix(in srgb, var(--color-base-200) 72%, transparent);
+  backdrop-filter: blur(36px) saturate(1.7);
+  -webkit-backdrop-filter: blur(36px) saturate(1.7);
+  border: 1px solid color-mix(in srgb, white 12%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 10%, transparent),
+    0 24px 64px -16px oklch(10% 0.05 265 / 0.75);
+}
+
+@utility glow-primary {
+  box-shadow: 0 0 14px -3px color-mix(in srgb, var(--color-primary) 55%, transparent);
+}
+
+@utility glow-accent {
+  box-shadow: 0 0 14px -3px color-mix(in srgb, var(--color-accent) 55%, transparent);
+}
+
+@utility neon-text {
+  text-shadow: 0 0 18px color-mix(in srgb, var(--color-primary) 45%, transparent);
+}
+
+@utility rounded-mac {
+  border-radius: 1.25rem;
+}
+
+@utility rounded-mac-sm {
+  border-radius: 0.875rem;
+}
+
+@utility animate-fade-in-up {
+  animation: fade-in-up 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@utility animate-glow-pulse {
+  animation: glow-pulse 2.4s ease-in-out infinite;
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   macOS 27 主题覆盖：标题栏、侧栏、弹窗
+   ═══════════════════════════════════════════════════════════════ */
+
+[data-theme="macos27"] .app-sidebar,
+[data-theme="macos27-light"] .app-sidebar {
+  background: color-mix(in srgb, var(--color-base-100) 48%, var(--color-base-300) 52%);
+  backdrop-filter: blur(30px) saturate(1.6);
+  -webkit-backdrop-filter: blur(30px) saturate(1.6);
+  border-right: 1px solid color-mix(in srgb, white 8%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 5%, transparent),
+    8px 0 32px -12px oklch(10% 0.05 265 / 0.45);
+}
+
+[data-theme="macos27"] .modal-box,
+[data-theme="macos27"] .dropdown-content,
+[data-theme="macos27-light"] .modal-box,
+[data-theme="macos27-light"] .dropdown-content {
+  background: color-mix(in srgb, var(--color-base-100) 64%, transparent);
+  backdrop-filter: blur(32px) saturate(1.6);
+  -webkit-backdrop-filter: blur(32px) saturate(1.6);
+  border: 1px solid color-mix(in srgb, white 11%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 8%, transparent),
+    0 20px 56px -14px oklch(10% 0.05 265 / 0.65);
+}
+
+[data-theme="macos27"] .tooltip::before,
+[data-theme="macos27"] .tooltip::after,
+[data-theme="macos27-light"] .tooltip::before,
+[data-theme="macos27-light"] .tooltip::after {
+  background: color-mix(in srgb, var(--color-base-300) 82%, transparent);
+  backdrop-filter: blur(14px);
+  border: 1px solid color-mix(in srgb, white 10%, transparent);
+}
+
+[data-theme="macos27"] .sidebar-item-selected,
+[data-theme="macos27-light"] .sidebar-item-selected {
+  box-shadow: none;
+  background: color-mix(in srgb, var(--color-primary) 16%, transparent);
+  color: var(--color-primary);
+  border-radius: 0.625rem;
+  text-shadow: 0 0 12px color-mix(in srgb, var(--color-primary) 35%, transparent);
+}
+
+[data-theme="macos27"] .sidebar-section-label,
+[data-theme="macos27-light"] .sidebar-section-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: color-mix(in srgb, var(--color-base-content) 32%, transparent);
+}
+
+[data-theme="macos27"] .btn-primary,
+[data-theme="macos27-light"] .btn-primary {
+  box-shadow:
+    inset 0 1px 0 oklch(100% 0 0 / 22%),
+    0 0 14px -3px color-mix(in srgb, var(--color-primary) 45%, transparent);
+}
+
+[data-theme="macos27"] .text-base-content\/30 { color: color-mix(in srgb, var(--color-base-content) 58%, transparent); }
+[data-theme="macos27"] .text-base-content\/40 { color: color-mix(in srgb, var(--color-base-content) 64%, transparent); }
+[data-theme="macos27"] .text-base-content\/50 { color: color-mix(in srgb, var(--color-base-content) 70%, transparent); }
+[data-theme="macos27"] .text-base-content\/60 { color: color-mix(in srgb, var(--color-base-content) 76%, transparent); }
+[data-theme="macos27"] .text-base-content\/70 { color: color-mix(in srgb, var(--color-base-content) 84%, transparent); }
+
+[data-theme="macos27-light"] .text-base-content\/30 { color: color-mix(in srgb, var(--color-base-content) 50%, transparent); }
+[data-theme="macos27-light"] .text-base-content\/40 { color: color-mix(in srgb, var(--color-base-content) 58%, transparent); }
+[data-theme="macos27-light"] .text-base-content\/50 { color: color-mix(in srgb, var(--color-base-content) 66%, transparent); }
+[data-theme="macos27-light"] .text-base-content\/60 { color: color-mix(in srgb, var(--color-base-content) 74%, transparent); }
+[data-theme="macos27-light"] .text-base-content\/70 { color: color-mix(in srgb, var(--color-base-content) 82%, transparent); }
+
+[data-theme="macos27"] ::-webkit-scrollbar,
+[data-theme="macos27-light"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+[data-theme="macos27"] ::-webkit-scrollbar-thumb,
+[data-theme="macos27-light"] ::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--color-primary) 28%, transparent);
+}
+
+[data-theme="macos27"] ::-webkit-scrollbar-thumb:hover,
+[data-theme="macos27-light"] ::-webkit-scrollbar-thumb:hover {
+  background: color-mix(in srgb, var(--color-primary) 46%, transparent);
+}
+
+[data-theme="macos27"] ::-webkit-scrollbar-track,
+[data-theme="macos27-light"] ::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+/* macOS 27 标题栏玻璃化 */
+[data-theme="macos27"] .tl-group,
+[data-theme="macos27-light"] .tl-group {
+  filter: saturate(1.1);
+}
+
+[data-theme="macos27"] .mac-tl,
+[data-theme="macos27-light"] .mac-tl {
+  transition: transform 0.15s ease, box-shadow 0.15s ease, filter 0.15s ease;
+}
+
+[data-theme="macos27"] .mac-tl:hover,
+[data-theme="macos27-light"] .mac-tl:hover {
+  transform: scale(1.12);
+  filter: brightness(1.1);
+}
+
+[data-theme="macos27"] .mac-tl-close:hover,
+[data-theme="macos27-light"] .mac-tl-close:hover {
+  box-shadow: 0 0 10px -1px #ff5f57;
+}
+
+[data-theme="macos27"] .mac-tl-min:hover,
+[data-theme="macos27-light"] .mac-tl-min:hover {
+  box-shadow: 0 0 10px -1px #febc2e;
+}
+
+[data-theme="macos27"] .mac-tl-max:hover,
+[data-theme="macos27-light"] .mac-tl-max:hover {
+  box-shadow: 0 0 10px -1px #28c840;
+}
+
+/* macOS 27 缩略图选中发光 */
+[data-theme="macos27"] .thumbnail-active-ring,
+[data-theme="macos27-light"] .thumbnail-active-ring {
+  box-shadow:
+    0 0 0 2px var(--color-primary),
+    0 8px 24px -6px color-mix(in srgb, var(--color-primary) 45%, transparent);
+}
+
+[data-theme="macos27"] .thumb-badge,
+[data-theme="macos27-light"] .thumb-badge {
+  background: color-mix(in srgb, var(--color-base-300) 70%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border-color: color-mix(in srgb, white 16%, transparent);
+}
+
+[data-theme="macos27"] .thumb-badge-highlight,
+[data-theme="macos27-light"] .thumb-badge-highlight {
+  background: color-mix(in srgb, var(--color-warning) 24%, var(--color-base-300) 56%);
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   macOS 27 组件级玻璃化覆盖
+   ═══════════════════════════════════════════════════════════════ */
+
+[data-theme="macos27"] .statusbar-glass,
+[data-theme="macos27-light"] .statusbar-glass {
+  background: color-mix(in srgb, var(--color-base-100) 62%, transparent);
+  backdrop-filter: blur(28px) saturate(1.55);
+  -webkit-backdrop-filter: blur(28px) saturate(1.55);
+  border-top: 1px solid color-mix(in srgb, white 10%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 8%, transparent),
+    0 -12px 40px -10px oklch(12% 0.04 265 / 0.45);
+  color: color-mix(in srgb, var(--color-base-content) 90%, transparent);
+}
+
+[data-theme="macos27"] .statusbar-text,
+[data-theme="macos27-light"] .statusbar-text {
+  text-shadow: 0 0 18px color-mix(in srgb, var(--color-primary) 45%, transparent);
+}
+
+[data-theme="macos27"] .statusbar-glass .scan-badge,
+[data-theme="macos27-light"] .statusbar-glass .scan-badge {
+  background: color-mix(in srgb, var(--color-base-200) 64%, transparent);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid color-mix(in srgb, white 10%, transparent);
+  color: var(--color-primary);
+}
+
+[data-theme="macos27"] .content-toolbar,
+[data-theme="macos27-light"] .content-toolbar {
+  background: color-mix(in srgb, var(--color-base-100) 40%, transparent);
+  backdrop-filter: blur(28px) saturate(1.6);
+  -webkit-backdrop-filter: blur(28px) saturate(1.6);
+  border-bottom: 1px solid color-mix(in srgb, white 8%, transparent);
+  box-shadow:
+    0 1px 0 color-mix(in srgb, white 5%, transparent),
+    0 12px 32px -10px oklch(12% 0.04 265 / 0.4);
+}
+
+[data-theme="macos27"] .content-quickview,
+[data-theme="macos27-light"] .content-quickview {
+  background: color-mix(in srgb, var(--color-base-200) 72%, transparent);
+  backdrop-filter: blur(36px) saturate(1.7);
+  -webkit-backdrop-filter: blur(36px) saturate(1.7);
+  border: 1px solid color-mix(in srgb, white 10%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 8%, transparent),
+    0 24px 64px -16px oklch(10% 0.05 265 / 0.75);
+}
+
+[data-theme="macos27"] .info-panel-glass,
+[data-theme="macos27-light"] .info-panel-glass {
+  background: color-mix(in srgb, var(--color-base-100) 62%, transparent);
+  backdrop-filter: blur(28px) saturate(1.55);
+  -webkit-backdrop-filter: blur(28px) saturate(1.55);
+  border-left: 1px solid color-mix(in srgb, white 10%, transparent);
+  box-shadow:
+    inset 0 1px 0 color-mix(in srgb, white 8%, transparent),
+    -8px 0 32px -12px oklch(10% 0.05 265 / 0.45);
 }

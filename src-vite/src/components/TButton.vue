@@ -7,14 +7,14 @@
       @mouseleave="hideTooltip"
     >
       <div
-        class="btn btn-ghost btn-square rounded-box border-0 focus:outline-none shadow-none! flex flex-col text-base-content/70 hover:text-base-content"
+        class="btn btn-ghost btn-square rounded-mac-sm border-0 focus:outline-none shadow-none! flex flex-col text-base-content/70 hover:text-base-content transition-all duration-200 ease-out hover:scale-105"
         :class="[
           buttonClasses,
           {
             'btn-xs hover:bg-base-100/30': buttonSize === 'small',
             'btn-sm hover:bg-base-100/30': buttonSize === 'medium',
             'btn-lg hover:bg-base-100/30': buttonSize === 'large',
-            'bg-base-100/30': selected,
+            'glow-primary bg-base-100/40': selected,
             'pointer-events-none cursor-default text-base-content/30 hover:text-base-content/30': disabled,
           }
         ]"
@@ -45,7 +45,7 @@
           :class="[
             textClasses,
             {
-              'text-primary': selected && !disabled,
+              'text-primary neon-text': selected && !disabled,
               'text-base-content/30': disabled,
             }
           ]"
@@ -59,7 +59,7 @@
         <div
           v-if="isHovered && hasTooltip"
           ref="tooltipRef"
-          class="fixed z-1000 px-2 py-1 text-xs leading-tight max-w-xs whitespace-normal text-center rounded-box bg-base-100 shadow-lg pointer-events-none"
+          class="fixed z-1000 px-2 py-1 text-xs leading-tight max-w-xs whitespace-normal text-center rounded-box glass-panel pointer-events-none"
           :style="tooltipStyle"
         >
           {{ tooltipText }}

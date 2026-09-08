@@ -28,6 +28,13 @@ fn detect_image_mime(data: &[u8]) -> &'static str {
         "image/tiff"
     } else if data.starts_with(b"RIFF") && data.get(8..12) == Some(b"WEBP") {
         "image/webp"
+    } else if data.starts_with(&[0x00, 0x00, 0x01, 0x00]) {
+        "image/x-icon"
+    } else if data.starts_with(b"P1") || data.starts_with(b"P2") || data.starts_with(b"P3")
+        || data.starts_with(b"P4") || data.starts_with(b"P5") || data.starts_with(b"P6")
+        || data.starts_with(b"P7")
+    {
+        "image/x-portable-pixmap"
     } else {
         detect_isobmff_mime(data)
     }

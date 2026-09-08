@@ -7,6 +7,7 @@
     }"
     @wheel="onWheel"
     @dragstart.capture.prevent
+    @contextmenu.prevent="onBackgroundContextMenu"
   >
     <VirtualScroll
       v-if="fileList.length > 0"
@@ -37,7 +38,7 @@
         v-if="isGroupRow(item)"
         class="w-full h-full flex items-center"
       >
-        <div class="w-full h-8 px-1 flex items-center text-base-content/70 select-none bg-base-200/30 rounded-box">
+        <div class="w-full h-8 px-1 flex items-center text-base-content/70 select-none glass-panel rounded-mac-sm">
           <div class="group flex items-center gap-1">
             <div
               class="flex shrink-0 items-center overflow-hidden transition-all duration-100 ease-out"
@@ -199,12 +200,20 @@ const emit = defineEmits([
   'item-drag-start',
   'item-drag',
   'item-drag-end',
+  'background-contextmenu',
 ]);
 
 const uiStore = useUIStore();
 const { locale, messages } = useI18n();
 const localeMsg = computed(() => messages.value[locale.value] as any);
 const containerRef = ref<HTMLElement | null>(null);
+
+// Right-click on the grid background (thumbnails stop propagation on their own,
+// so anything reaching the root here is the empty area).
+function onBackgroundContextMenu(e: MouseEvent) {
+  emit('background-contextmenu', { x: e.clientX, y: e.clientY });
+}
+
 const scroller = ref<any>(null);
 const columnCount = ref(4);
 const containerWidth = ref(0);

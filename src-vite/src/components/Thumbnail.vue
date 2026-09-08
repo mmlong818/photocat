@@ -3,11 +3,13 @@
     :class="[
       'border-2 flex flex-col items-center cursor-pointer group',
       thumbnailCornerClass,
+      config.settings.grid.thumbnailCorners !== 1 ? 'rounded-mac-sm' : '',
       isTransitionDisabled ? 'transition-none' : 'transition-[background-color,color] ease-in-out duration-150 ',
       config.settings.grid.style === 0 ? 'p-1 w-fit h-fit' : 'w-full h-full',
       isActive
         ? (isContentActive ? 'border-primary' : 'border-primary/50')
         : 'border-transparent',
+      isActive ? 'thumbnail-active-ring' : '',
       config.settings.grid.style === 0 && isSelected ? 'bg-base-100 hover:bg-base-100' : 'hover:bg-base-100/30 hover:text-base-content ',
     ]"
     @click="(event: MouseEvent) => $emit('clicked', { shiftKey: event.shiftKey, metaKey: event.metaKey, ctrlKey: event.ctrlKey })"
@@ -17,10 +19,10 @@
     <div
       ref="containerRef"
       data-thumbnail-container
-      :class="[thumbnailCornerClass, 'relative flex items-center justify-center overflow-hidden bg-base-200/70']"
+      :class="[thumbnailCornerClass, config.settings.grid.thumbnailCorners !== 1 ? 'rounded-mac-sm' : '', 'relative flex items-center justify-center overflow-hidden bg-base-200/70']"
       :style="layoutStyle"
-      @pointerenter="startMediaPreview"
-      @pointerleave="stopMediaPreview"
+      @pointerenter="onPointerEnter"
+      @pointerleave="onPointerLeave"
     >
       <!-- image -->
       <img
@@ -172,7 +174,7 @@
       </div>
 
       <!-- select checkbox -->
-      <div v-if="selectMode" class="absolute right-0.5 top-0.5">
+      <div v-if="selectMode || isHovered" class="absolute right-0.5 top-0.5">
         <label class="flex items-center text-primary cursor-pointer" @click.stop @dblclick.stop>
           <input
             type="checkbox"
@@ -186,10 +188,13 @@
 
       <!-- context menu (non-select only; in select mode a single shared menu is
            owned by the parent and opened via the select-contextmenu event) -->
+      <!-- context menu (non-select only; in select mode a single shared menu is
+           owned by the parent and opened via the select-contextmenu event) -->
       <div v-if="!selectMode" class="absolute right-0.5 top-0.5">
         <ContextMenu
           ref="contextMenuRef"
           :class="[
+            isHovered ? 'opacity-0 pointer-events-none' : '',
             !isSelected ? 'invisible group-hover:visible bg-base-300/30 rounded-box' : 'bg-base-300/30 rounded-box'
           ]"
           :iconMenu="IconMore"
@@ -292,6 +297,17 @@ const emit = defineEmits([
 
 const isTransitionDisabled = ref(false);
 let transitionTimeout: NodeJS.Timeout | null = null;
+const isHovered = ref(false);
+
+function onPointerEnter(event: PointerEvent) {
+  isHovered.value = true;
+  startMediaPreview();
+}
+
+function onPointerLeave(event: PointerEvent) {
+  isHovered.value = false;
+  stopMediaPreview();
+}
 
 const containerRef = ref<HTMLElement | null>(null);
 const contextMenuRef = ref<InstanceType<typeof ContextMenu> | null>(null);

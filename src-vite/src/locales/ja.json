@@ -200,10 +200,10 @@
     }
   },
   "welcome": {
-    "title": "Lap へようこそ",
+    "title": "猫叔的图 へようこそ",
     "description": "あなたのローカルフォトライブラリ。高速で検索可能、常にあなたの管理下に。",
     "add_album_title": "新しいアルバムから始めましょう",
-    "add_album_description": "フォルダを選択して、Lapに写真と動画を整理させましょう。",
+    "add_album_description": "フォルダを選択して、猫叔的图に写真と動画を整理させましょう。",
     "smart_album_title": "スマートアルバムで整理",
     "smart_album_description": "条件に合う写真をルールで自動的にまとめます。",
     "collection_title": "コレクションで写真をまとめる",
@@ -238,7 +238,7 @@
         "skip_once": "このファイルをスキップして続行",
         "file_label": "最後にスキャンしたファイル",
         "message": "前回のスキャンは正常に終了しませんでした。",
-        "message_with_file": "前回のスキャンは正常に終了しませんでした。\n\n最後にスキャンしたファイル:\n{file}\n\n続行すると、Lap はこのファイルを一度だけスキップしてスキャンを再開します。"
+        "message_with_file": "前回のスキャンは正常に終了しませんでした。\n\n最後にスキャンしたファイル:\n{file}\n\n続行すると、猫叔的图 はこのファイルを一度だけスキップしてスキャンを再開します。"
       }
     }
   },
@@ -759,7 +759,10 @@
     },
     "new_folder": {
       "title": "新しいフォルダー",
-      "error": "フォルダーを作成できませんでした。"
+      "error": "フォルダーを作成できませんでした。",
+      "placeholder": "フォルダー名",
+      "ok": "作成",
+      "success": "フォルダー「{name}」を作成しました。"
     },
     "move_to": {
       "title": "'{source}' を移動",
@@ -1110,6 +1113,8 @@
       ],
       "theme": "テーマ",
       "theme_options_light": [
+        "macOS 27 Light",
+        "ガラス・ライト",
         "デフォルト",
         "カップケーキ",
         "バンブルビー",
@@ -1133,6 +1138,8 @@
         "シルク"
       ],
       "theme_options_dark": [
+        "macOS 27",
+        "ガラス",
         "デフォルト",
         "シンセウェーブ",
         "ハロウィン",
@@ -1316,7 +1323,7 @@
       "multilingual_model_download_message": "多言語写真検索モデルがインストールされていません。ダウンロードすると50以上の言語で検索できます。",
       "download": "ダウンロード",
       "downloading_multilingual_model": "多言語モデルをダウンロード中",
-      "multilingual_model_download_success": "多言語検索モデルの準備ができました。使用するには Lap を再起動してください。",
+      "multilingual_model_download_success": "多言語検索モデルの準備ができました。使用するには 猫叔的图 を再起動してください。",
       "multilingual_model_download_failed": "多言語検索モデルのダウンロードに失敗しました",
       "similarity": "検索の類似度",
       "similarity_hint": "キーワード検索の画像一致を調整します",

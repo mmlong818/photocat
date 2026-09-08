@@ -4,6 +4,17 @@
 import { defineStore } from 'pinia';
 import { SIDEBAR } from '@/common/constants';
 
+// Match the OS language against available locales on first launch; fall back to Chinese.
+function detectDefaultLanguage() {
+  const supported = ['en', 'zh', 'es', 'fr', 'de', 'ja', 'ko', 'ru', 'pt'];
+  const candidates = (navigator.languages?.length ? navigator.languages : [navigator.language || ''])
+    .map((lang) => String(lang).toLowerCase().split('-')[0]);
+  for (const lang of candidates) {
+    if (supported.includes(lang)) return lang;
+  }
+  return 'zh';
+}
+
 export const useConfigStore = defineStore('configStore', {
   state: () => ({
     main: {
@@ -54,7 +65,7 @@ export const useConfigStore = defineStore('configStore', {
       fileType: 0,              // filter file type bitmask (0: all, 1: image, 2: video, 4: raw)
       sortType: 0,              // sort type (default to time)
       sortOrder: 0,             // sort order(0: ascending, 1: descending)
-      groupBy: 0,               // result grouping: 0=none, 1=folder, 2=day, 3=month, 4=rating, 5=location, 6=camera, 7=lens, 8=year, 9=file type, 10=culling
+      groupBy: 2,               // result grouping: 0=none, 1=folder, 2=day, 3=month, 4=rating, 5=location, 6=camera, 7=lens, 8=year, 9=file type, 10=culling
     },
 
     calendar: {
@@ -102,8 +113,8 @@ export const useConfigStore = defineStore('configStore', {
       tabIndex: 0,               // settings tab index (0: general, 1: browse, 2: viewer, 3: search, 4: library, 5: advanced, 6: shortcuts, 7: about)
 
       // general settings
-      language: 'en',             // default language
-      appearance: 1,              // appearance (0: light; 1: dark)
+      language: detectDefaultLanguage(), // default language (auto-detect, fallback zh)
+      appearance: 0,              // appearance (0: light; 1: dark) — macOS-style light default
       lightTheme: 0,              // light theme color index
       darkTheme: 0,               // dark theme color index
       scale: 1,                   // root font-size scale
@@ -123,7 +134,7 @@ export const useConfigStore = defineStore('configStore', {
       thumbnailSize: 512,         // gallery thumbnail quality: 256, 512, or 1024
       grid: {
         sizePosition: 0,         // grid size slider position (0-1)
-        style: 0,                // 0: card view, 1: tile view, 2: justified view, 3: masonry view
+        style: 2,                // 0: card view, 1: tile view, 2: justified view, 3: masonry view
         showFilmStrip: false,    // show filmstrip view
         viewMode: 'grid',        // grid | map
         scaling: 1,              // 0: Fit Entire Image, 1: Crop to Fill, 2: Stretch to Fill

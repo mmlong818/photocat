@@ -2,7 +2,7 @@
   <div :class="containerClass">
     <div
       v-if="hasData"
-      class="flex gap-4 items-center flex-1 min-w-0 overflow-hidden whitespace-nowrap text-base-content/70"
+      class="statusbar-text flex gap-4 items-center flex-1 min-w-0 overflow-hidden whitespace-nowrap text-base-content/70"
     >
       <div class="flex items-center shink-0">
         <IconList class="t-icon-size-xs mr-1" />
@@ -52,7 +52,7 @@
     </div>
     <div
       v-if="showUpdateIcon"
-      class="absolute right-1 shrink-0 px-1 py-1 flex items-center gap-1 rounded-full bg-base-300 text-primary/70 text-[11px] font-mono"
+      class="scan-badge absolute right-1 shrink-0 px-1 py-1 flex items-center gap-1 rounded-full bg-base-300 text-primary/70 text-[11px] font-mono"
     >
       <component :is="updateIconComponent" class="t-icon-size-xs shrink-0" :class="{ 'animate-spin': isUpdateAnimating }" />
       <span v-if="scanText" class="truncate text-right">{{ scanText }}</span>
@@ -157,7 +157,7 @@ const hasRealSelectedFile = computed(() => {
   return !!file && !file.isPlaceholder;
 });
 const containerClass = computed(() => {
-  const base = 'px-2 h-8 flex items-center justify-between text-sm cursor-default bg-base-300';
+  const base = 'statusbar-glass px-2 h-8 flex items-center justify-between text-sm cursor-default bg-base-300';
   if (props.isEmbedded) return base;
   return `${base} absolute bottom-0 left-0 right-0 z-30`;
 });

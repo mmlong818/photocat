@@ -29,6 +29,8 @@ export const SCALE_VALUES = [0.8, 0.9, 1, 1.1, 1.2];
 /// set the theme
 export function setTheme(appearance: number, themeId: number) {
   const theme = appearance === 0 ? [
+    "macos27-light",
+    "maoshu-light",
     "light",
     "cupcake",
     "bumblebee",
@@ -50,7 +52,9 @@ export function setTheme(appearance: number, themeId: number) {
     "nord",
     "caramellatte",
     "silk"
-  ][themeId] || 'light' : [
+  ][themeId] || 'maoshu-light' : [
+    "macos27",
+    "maoshu",
     "dark",
     "synthwave",
     "halloween",
@@ -65,7 +69,7 @@ export function setTheme(appearance: number, themeId: number) {
     "dim",
     "sunset",
     "abyss"
-  ][themeId] || 'dark';
+  ][themeId] || 'maoshu';
 
   document.documentElement.setAttribute('data-theme', theme);
 }
@@ -539,7 +543,8 @@ export function shouldUseBackendPreview(filePath = '', fileType = 0): boolean {
   return [
     'tif', 'tiff', 'jxl', 'heic', 'heif', 'hif',
     'exr', 'hdr', 'rgbe', 'psd', 'jp2', 'j2k', 'j2c', 'jpc', 'jpf', 'jpx',
-    'dpx', 'dds', 'tga', 'qoi', 'fits', 'fit', 'fts'
+    'dpx', 'dds', 'tga', 'qoi', 'fits', 'fit', 'fts',
+    'pbm', 'pgm', 'ppm', 'pam'
   ].includes(extension);
 }
 

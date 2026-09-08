@@ -200,10 +200,10 @@
     }
   },
   "welcome": {
-    "title": "Lap에 오신 것을 환영합니다",
+    "title": "猫叔的图에 오신 것을 환영합니다",
     "description": "당신의 로컬 사진 라이브러리. 빠르고 검색 가능하며 항상 당신의 통제 아래에 있습니다.",
     "add_album_title": "새 앨범으로 시작하세요",
-    "add_album_description": "폴더를 선택하고 Lap이 사진과 동영상을 정리하도록 하세요.",
+    "add_album_description": "폴더를 선택하고 猫叔的图이 사진과 동영상을 정리하도록 하세요.",
     "smart_album_title": "스마트 앨범으로 정리",
     "smart_album_description": "규칙에 맞는 사진을 자동으로 그룹화합니다.",
     "collection_title": "컬렉션에 사진 모으기",
@@ -238,7 +238,7 @@
         "skip_once": "이 파일을 건너뛰고 계속",
         "file_label": "마지막으로 스캔한 파일",
         "message": "이전 스캔이 정상적으로 종료되지 않았습니다.",
-        "message_with_file": "이전 스캔이 정상적으로 종료되지 않았습니다.\n\n마지막으로 스캔한 파일:\n{file}\n\n계속하면 Lap이 이 파일을 한 번 건너뛰고 스캔을 다시 시작합니다."
+        "message_with_file": "이전 스캔이 정상적으로 종료되지 않았습니다.\n\n마지막으로 스캔한 파일:\n{file}\n\n계속하면 猫叔的图이 이 파일을 한 번 건너뛰고 스캔을 다시 시작합니다."
       }
     }
   },
@@ -759,7 +759,10 @@
     },
     "new_folder": {
       "title": "새 폴더",
-      "error": "폴더를 만들지 못했습니다."
+      "error": "폴더를 만들지 못했습니다.",
+      "placeholder": "폴더 이름",
+      "ok": "만들기",
+      "success": "폴더 \"{name}\"을(를) 만들었습니다."
     },
     "move_to": {
       "title": "'{source}' 이동",
@@ -1110,6 +1113,8 @@
       ],
       "theme": "테마",
       "theme_options_light": [
+        "macOS 27 Light",
+        "글라스 라이트",
         "기본",
         "컵케이크",
         "범블비",
@@ -1133,6 +1138,8 @@
         "실크"
       ],
       "theme_options_dark": [
+        "macOS 27",
+        "글라스",
         "기본",
         "신스웨이브",
         "할로윈",
@@ -1316,7 +1323,7 @@
       "multilingual_model_download_message": "다국어 사진 검색 모델이 설치되어 있지 않습니다. 다운로드하면 50개 이상 언어 검색을 사용할 수 있습니다.",
       "download": "다운로드",
       "downloading_multilingual_model": "다국어 모델 다운로드 중",
-      "multilingual_model_download_success": "다국어 검색 모델이 준비되었습니다. 사용하려면 Lap을 다시 시작하세요.",
+      "multilingual_model_download_success": "다국어 검색 모델이 준비되었습니다. 사용하려면 猫叔的图을 다시 시작하세요.",
       "multilingual_model_download_failed": "다국어 검색 모델 다운로드 실패",
       "similarity": "검색 유사도",
       "similarity_hint": "키워드 검색의 시각적 일치 결과를 조절합니다",
