@@ -149,9 +149,12 @@
   "plugins": {
     "updater": {
       "endpoints": [
-        "https://REPLACE-WITH-YOUR-OWN-HOST/lap/latest.json"
+        "https://github.com/mmlong818/photocat/releases/latest/download/latest.json"
       ],
-      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDUzMEQ0QzM2RTRDOUNEMjUKUldRbHpjbmtOa3dOVXlBYm0rYk9lY2FtVGpzWTJ2NkRqdUtSOEN4eUxwRlVTaUlVbkJ4aHhQS3gK"
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDVFMzhGNDdEMkVGMjZEMTkKUldRWmJmSXVmZlE0WGl2L0ZESTZQVmJTeHFhalBhelFBN2ZzckZmaDRqZDZGbkgrSGpiaEg2bCsK",
+      "windows": {
+        "installMode": "passive"
+      }
     }
   }
 }

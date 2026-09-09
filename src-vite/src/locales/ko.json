@@ -1711,6 +1711,7 @@
         "privacy": "개인정보"
       },
       "auto_update": {
+        "portable_notice": "포터블 버전입니다. 새 버전을 직접 다운로드하세요.",
         "update": "업데이트",
         "check": "업데이트 확인",
         "checking": "확인 중...",

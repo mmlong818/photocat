@@ -1,13 +1,23 @@
 import { computed, ref, type Ref } from 'vue';
 import { check, type Update, type DownloadEvent } from '@tauri-apps/plugin-updater';
 import { relaunch } from '@tauri-apps/plugin-process';
-import { openExternalUrl } from '@/common/api';
+import { openExternalUrl, isPortableBuild } from '@/common/api';
 import { useToast, type ToastPlacement } from '@/common/toast';
 
 const UPDATE_CHECK_INTERVAL = 24 * 60 * 60 * 1000;
 const UPDATE_CHECK_KEY = 'lap_last_update_check';
 const UPDATE_RELEASE_NOTE_KEY = 'lap_update_release_note_version';
 const UPDATE_CHECK_TIMEOUT_MS = 8_000;
+const RELEASES_URL = 'https://github.com/mmlong818/photocat/releases';
+
+// The portable build is a folder the user unzipped. Installing an update would
+// run an installer and produce a second, installed copy, leaving the folder
+// they actually launch untouched — so it is told where to download instead.
+let portableBuild: boolean | null = null;
+async function runsFromPortableFolder() {
+  if (portableBuild === null) portableBuild = await isPortableBuild();
+  return portableBuild;
+}
 
 function extractRawErrorMessage(error: unknown) {
   if (typeof error === 'string') return error.trim();
@@ -69,7 +79,7 @@ export function useAppUpdater(localeMsg: Ref<any>, options: AppUpdaterOptions = 
   });
   const releaseNoteUrl = computed(() => {
     if (!releaseNoteVersion.value) return '';
-    return `https://github.com/julyx10/lap/releases/tag/v${releaseNoteVersion.value}`;
+    return `${RELEASES_URL}/tag/v${releaseNoteVersion.value}`;
   });
   const downloadProgressLabel = computed(() => {
     if (downloadPercent.value === null) {
@@ -240,6 +250,12 @@ export function useAppUpdater(localeMsg: Ref<any>, options: AppUpdaterOptions = 
     }
 
     if (!currentUpdate) return;
+
+    if (await runsFromPortableFolder()) {
+      toast.info(localeMsg.value.settings.about.auto_update.portable_notice, { placement: toastPlacement });
+      await openExternalUrl(RELEASES_URL + '/latest');
+      return;
+    }
 
     try {
       isInstallingUpdate.value = true;

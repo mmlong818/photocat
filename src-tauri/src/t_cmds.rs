@@ -3351,6 +3351,14 @@ pub fn get_storage_file_info() -> Result<t_utils::FileInfo, String> {
 
 // image search
 
+/// Whether this copy runs from a portable folder rather than an installation.
+/// The updater uses it to offer a download instead of running an installer
+/// that would leave the portable folder behind.
+#[tauri::command]
+pub fn is_portable_build() -> bool {
+    crate::t_portable::is_portable()
+}
+
 /// Whether the image-text search models have finished loading. The startup
 /// screen shows this, and it is polled once in case the event fired before
 /// the window was listening.

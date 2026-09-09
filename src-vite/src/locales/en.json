@@ -1711,6 +1711,7 @@
         "privacy": "Privacy"
       },
       "auto_update": {
+        "portable_notice": "Portable build: please download the new version manually.",
         "update": "Update",
         "check": "Check for updates",
         "checking": "Checking...",

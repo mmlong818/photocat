@@ -37,6 +37,7 @@ mod t_motion_photo;
 mod t_ocr;
 mod t_pasteboard;
 mod t_person;
+mod t_portable;
 mod t_protocol;
 mod t_rename;
 mod t_similar;
@@ -483,6 +484,7 @@ async fn main() {
             // ai
             t_cmds::check_ai_status,
             t_cmds::get_model_status,
+            t_cmds::is_portable_build,
             t_cmds::get_image_search_model_status,
             t_cmds::set_image_search_model,
             t_cmds::download_multilingual_image_search_model,

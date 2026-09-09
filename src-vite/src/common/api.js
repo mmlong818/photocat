@@ -1755,6 +1755,18 @@ export async function getStorageFileInfo() {
   return null;
 }
 
+// Whether the app was launched from a portable folder. Treated as installed on
+// error, which is the conservative answer: a normal update prompt is better
+// than silently withholding one.
+export async function isPortableBuild() {
+  try {
+    return await invoke('is_portable_build');
+  } catch (error) {
+    console.error('isPortableBuild error:', error);
+    return false;
+  }
+}
+
 // Whether the image-text search models are still loading.
 // Returns 'loading' | 'ready' | 'failed'; 'failed' on an unreachable backend so
 // the startup screen never waits forever.

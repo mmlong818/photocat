@@ -85,6 +85,17 @@
               </template>
             </ContextMenu>
             <div class="flex-1"></div>
+            <button
+              v-if="updateAvailable || isInstallingUpdate || isUpdateReadyToRestart || isReleaseNoteVisible"
+              class="badge badge-sm border-0 px-2 py-2 font-medium transition-colors shrink-0"
+              :class="isUpdateActionEnabled ? 'badge-primary cursor-pointer' : 'badge-neutral/60 cursor-default'"
+              :disabled="isInstallingUpdate"
+              :title="updateButtonTooltip"
+              @click="handleUpdateAction"
+            >
+              <span v-if="isInstallingUpdate" class="loading loading-spinner loading-xs"></span>
+              <span>{{ updateButtonText }}</span>
+            </button>
           </div>
 
           <!-- panel-->
@@ -174,6 +185,7 @@ import { getName } from '@tauri-apps/api/app';
 import { invoke } from '@tauri-apps/api/core';
 import { config, libConfig } from '@/common/config';
 import { useToast } from '@/common/toast';
+import { useAppUpdater } from '@/common/updater';
 import { useUIStore } from '@/stores/uiStore';
 import { isWin, isMac, isLinux, SCALE_VALUES } from '@/common/utils';
 import { matchesShortcut, ShortcutPlatform } from '@/common/shortcuts';
@@ -326,6 +338,18 @@ let unlistenAlbumsRefreshed: (() => void) | null = null;
 let unlistenAddAlbumRequested: (() => void) | null = null;
 let unlistenEditAlbumRequested: (() => void) | null = null;
 const shortcutPlatform: ShortcutPlatform = isMac ? 'mac' : (isLinux ? 'linux' : 'windows');
+const {
+  updateAvailable,
+  isCheckingUpdate,
+  isInstallingUpdate,
+  isUpdateReadyToRestart,
+  isReleaseNoteVisible,
+  updateButtonTooltip,
+  updateButtonText,
+  isUpdateActionEnabled,
+  checkForUpdates,
+  handleUpdateAction,
+} = useAppUpdater(localeMsg);
 
 // buttons
 const buttons = computed(() =>  [
@@ -447,7 +471,9 @@ onMounted(async () => {
     console.error('Failed to get app name:', e);
   }
 
-  // Automatic update checks are disabled in this build (no update server yet).
+  if (config.settings.autoCheckUpdates !== false) {
+    void checkForUpdates(false);
+  }
 });
 
 onBeforeUnmount(() => {

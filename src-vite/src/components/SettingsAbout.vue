@@ -21,6 +21,16 @@
           </div>
           <div class="flex items-center gap-2">
             <span>{{ displayVersion }}</span>
+            <button
+              class="badge badge-sm border-0 px-2 py-2 font-medium transition-colors hover:text-primary"
+              :class="isUpdateActionEnabled ? 'badge-primary cursor-pointer' : 'badge-neutral/60 cursor-pointer'"
+              :disabled="isInstallingUpdate || isCheckingUpdate"
+              :title="updateButtonTooltip"
+              @click="handleUpdateAction"
+            >
+              <span v-if="isInstallingUpdate || isCheckingUpdate" class="loading loading-spinner loading-xs"></span>
+              <span>{{ updateButtonText }}</span>
+            </button>
           </div>
         </div>
 
@@ -46,6 +56,7 @@
 import { computed, ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getPackageInfo, getBuildTime } from '@/common/api';
+import { useAppUpdater } from '@/common/updater';
 import iconLogo from '@/assets/images/icon.png';
 
 const packageInfo = ref<any>({
@@ -64,6 +75,16 @@ const displayVersion = computed(() => {
   const commitHash = packageInfo.value.commit_hash || packageInfo.value.commitHash || '';
   return commitHash ? `${version} (${commitHash})` : version;
 });
+const { locale, messages } = useI18n();
+const localeMsg = computed(() => messages.value[locale.value] as any);
+const {
+  isCheckingUpdate,
+  isInstallingUpdate,
+  updateButtonTooltip,
+  updateButtonText,
+  isUpdateActionEnabled,
+  handleUpdateAction,
+} = useAppUpdater(localeMsg, { toastPlacement: 'center' });
 
 onMounted(async () => {
   try {

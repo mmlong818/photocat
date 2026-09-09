@@ -1711,6 +1711,7 @@
         "privacy": "プライバシー"
       },
       "auto_update": {
+        "portable_notice": "ポータブル版です。新しいバージョンを手動でダウンロードしてください。",
         "update": "更新",
         "check": "更新を確認",
         "checking": "確認中...",
