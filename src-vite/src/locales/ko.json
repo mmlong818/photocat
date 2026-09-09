@@ -1732,6 +1732,8 @@
     }
   },
   "startup": {
+    "loading_models": "이미지-텍스트 검색 모델 불러오는 중…",
+    "loading_library": "라이브러리 불러오는 중…",
     "data_migrated": "이전 버전에서 라이브러리 {libraries}개를 이전했습니다."
   }
 }

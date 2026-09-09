@@ -1755,6 +1755,18 @@ export async function getStorageFileInfo() {
   return null;
 }
 
+// Whether the image-text search models are still loading.
+// Returns 'loading' | 'ready' | 'failed'; 'failed' on an unreachable backend so
+// the startup screen never waits forever.
+export async function getModelStatus() {
+  try {
+    return await invoke('get_model_status');
+  } catch (error) {
+    console.error('getModelStatus error:', error);
+    return 'failed';
+  }
+}
+
 // image search
 
 // check ai status

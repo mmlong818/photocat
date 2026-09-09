@@ -1,6 +1,7 @@
 <template>
-  <div v-if="!isReady" class="w-screen h-screen flex items-center justify-center bg-base-300">
-    <span class="loading loading-spinner loading-lg text-primary app-loading-delayed"></span>
+  <div v-if="!isReady" class="w-screen h-screen flex flex-col items-center justify-center gap-4 bg-base-300">
+    <span class="loading loading-spinner loading-lg text-primary"></span>
+    <p class="text-sm text-base-content/60">{{ startupMessage }}</p>
   </div>
   <template v-else>
     <router-view />
@@ -9,21 +10,54 @@
 </template>
  
 <script setup>
-import { ref, watch, onMounted, onUnmounted } from 'vue';
-import { emit } from '@tauri-apps/api/event';
+import { ref, computed, watch, onMounted, onUnmounted } from 'vue';
+import { emit, listen } from '@tauri-apps/api/event';
 import { getCurrentWebviewWindow } from '@tauri-apps/api/webviewWindow';
+import { useI18n } from 'vue-i18n';
 import { useConfigStore } from '@/stores/configStore';
 import { useLibraryStore } from '@/stores/libraryStore';
-import { clearIndexRecoveryInfo } from '@/common/api';
+import { clearIndexRecoveryInfo, getModelStatus } from '@/common/api';
 import { isMac, setTheme, SCALE_VALUES } from '@/common/utils';
 import { matchesShortcut } from '@/common/shortcuts';
 import ToastContainer from '@/components/ToastContainer.vue';
 
+const { t } = useI18n();
 const libConfig = useLibraryStore();
 const isReady = ref(false);
 const config = useConfigStore();
+// What the startup screen is currently waiting for. The image-text search
+// models take the longest, so they are named explicitly rather than leaving a
+// bare spinner on screen.
+const startupStep = ref('models');
+const startupMessage = computed(() =>
+  startupStep.value === 'models' ? t('startup.loading_models') : t('startup.loading_library')
+);
 let unlistenMainCloseRequested = null;
+let unlistenModelStatus = null;
 let isHandlingMainClose = false;
+
+// Resolves once the models are loaded, or once loading them has failed.
+//
+// The backend emits `model-status` when it finishes, but it can finish before
+// this window is listening, so the current value is also read directly.
+const waitForModels = async () => {
+  let settle;
+  const settled = new Promise((resolve) => {
+    settle = resolve;
+  });
+
+  unlistenModelStatus = await listen('model-status', (event) => {
+    if (event.payload !== 'loading') settle(event.payload);
+  });
+
+  const current = await getModelStatus();
+  if (current !== 'loading') settle(current);
+
+  const status = await settled;
+  if (status === 'failed') {
+    console.warn('[App] image-text search unavailable; continuing without it');
+  }
+};
 
 // Auto-save library state when any config changes
 watch(() => libConfig.$state, () => {
@@ -101,6 +135,17 @@ onMounted(async () => {
   setTheme(config.settings.appearance, 
     config.settings.appearance === 0 ? config.settings.lightTheme : config.settings.darkTheme);
 
+  // Show the window before any of the slow work so launching the app has an
+  // immediate, visible response instead of several seconds of nothing.
+  // Secondary windows open after loading has already finished, so only the
+  // main window waits on the models.
+  if (win.label === 'main') {
+    await win.show();
+    await waitForModels();
+  }
+
+  startupStep.value = 'library';
+
   // Initialize library state from backend
   try {
     await libConfig.init();
@@ -109,10 +154,6 @@ onMounted(async () => {
     // Continue anyway - user can retry from UI
   } finally {
     isReady.value = true;
-    // Show window after everything is loaded (main window only)
-    if (win.label === 'main') {
-      await win.show();
-    }
   }
 });
 
@@ -127,6 +168,8 @@ onUnmounted(async () => {
   }
   unlistenMainCloseRequested?.();
   unlistenMainCloseRequested = null;
+  unlistenModelStatus?.();
+  unlistenModelStatus = null;
 });
 
 const handleKeyDown = (event) => {
@@ -198,15 +241,3 @@ const handleContextMenu = (e) => {
 
 </script>
 
-<style scoped>
-.app-loading-delayed {
-  opacity: 0;
-  animation: appLoadingShow 0s linear 0.5s forwards;
-}
-
-@keyframes appLoadingShow {
-  to {
-    opacity: 1;
-  }
-}
-</style>

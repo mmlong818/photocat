@@ -3351,6 +3351,14 @@ pub fn get_storage_file_info() -> Result<t_utils::FileInfo, String> {
 
 // image search
 
+/// Whether the image-text search models have finished loading. The startup
+/// screen shows this, and it is polled once in case the event fired before
+/// the window was listening.
+#[tauri::command]
+pub fn get_model_status(state: State<t_ai::ModelLoadState>) -> t_ai::ModelStatus {
+    state.get()
+}
+
 /// check ai status
 #[tauri::command]
 pub fn check_ai_status(state: State<t_ai::AiState>) -> String {

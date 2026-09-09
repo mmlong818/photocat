@@ -1732,6 +1732,8 @@
     }
   },
   "startup": {
+    "loading_models": "Loading the image-text search model…",
+    "loading_library": "Loading your library…",
     "data_migrated": "Migrated {libraries} librar(y/ies) from the previous version."
   }
 }

@@ -181,21 +181,29 @@ impl AiEngine {
             return Ok(());
         }
 
-        println!("Loading AI Models...");
+        println!("Loading image-text search models...");
+        let started = std::time::Instant::now();
 
         let resource_dir = Self::resource_model_dir(app)?;
         let vision_model_path = resource_dir.join(t_common::AI_VISION_MODEL);
         // Load Vision Model
         if self.vision_model.is_none() {
+            let step = std::time::Instant::now();
             let vision_model = Self::load_session(&vision_model_path, "vision")?;
             self.vision_model = Some(vision_model);
+            println!("  vision model loaded in {} ms", step.elapsed().as_millis());
         }
 
         if self.text_model.is_none() {
+            let step = std::time::Instant::now();
             self.set_text_model(app, ImageSearchTextModel::Default)?;
+            println!("  text model loaded in {} ms", step.elapsed().as_millis());
         }
 
-        println!("AI Models Loaded Successfully!");
+        println!(
+            "Image-text search ready in {} ms",
+            started.elapsed().as_millis()
+        );
         Ok(())
     }
 
@@ -846,4 +854,41 @@ pub async fn cancel_multilingual_text_model_download(app: AppHandle) -> Result<(
     let model_dir = AiEngine::multilingual_model_dir(&app)?;
     clean_multilingual_download_temp_dirs(&model_dir).await;
     Ok(())
+}
+
+/// How far along the image-text search models are.
+///
+/// Loading them takes long enough to notice, and it used to happen before the
+/// window existed, so starting the app looked like nothing happening at all.
+/// The frontend now shows the window straight away and reports this instead.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum ModelStatus {
+    Loading,
+    Ready,
+    /// The models could not be loaded. Everything except semantic search works.
+    Failed,
+}
+
+pub struct ModelLoadState(std::sync::Mutex<ModelStatus>);
+
+impl Default for ModelLoadState {
+    fn default() -> Self {
+        Self(std::sync::Mutex::new(ModelStatus::Loading))
+    }
+}
+
+impl ModelLoadState {
+    pub fn get(&self) -> ModelStatus {
+        self.0
+            .lock()
+            .map(|status| *status)
+            .unwrap_or(ModelStatus::Failed)
+    }
+
+    pub fn set(&self, next: ModelStatus) {
+        if let Ok(mut status) = self.0.lock() {
+            *status = next;
+        }
+    }
 }

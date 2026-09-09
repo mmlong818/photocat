@@ -1732,6 +1732,8 @@
     }
   },
   "startup": {
+    "loading_models": "Chargement du modèle de recherche image-texte…",
+    "loading_library": "Chargement de votre bibliothèque…",
     "data_migrated": "{libraries} bibliothèque(s) migrée(s) depuis la version précédente."
   }
 }

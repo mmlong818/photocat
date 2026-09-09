@@ -1732,6 +1732,8 @@
     }
   },
   "startup": {
+    "loading_models": "Bild-Text-Suchmodell wird geladen…",
+    "loading_library": "Mediathek wird geladen…",
     "data_migrated": "{libraries} Mediathek(en) aus der Vorversion übernommen."
   }
 }

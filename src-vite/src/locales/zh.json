@@ -1732,6 +1732,8 @@
     }
   },
   "startup": {
+    "loading_models": "载入图文检索模型…",
+    "loading_library": "载入图库…",
     "data_migrated": "已从旧版本迁移 {libraries} 个图库的数据。"
   }
 }

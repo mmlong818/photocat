@@ -113,6 +113,7 @@ async fn main() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(t_video::VideoManager::default())
         .manage(t_ai::AiState(std::sync::Mutex::new(t_ai::AiEngine::new())))
+        .manage(t_ai::ModelLoadState::default())
         .manage(t_face::FaceState(std::sync::Arc::new(
             std::sync::Mutex::new(t_face::FaceEngine::new()),
         )))
@@ -196,14 +197,30 @@ async fn main() {
                 eprintln!("Failed to restore asset scopes: {}", e);
             }
 
-            // Initialize AI Engine
-            let app_handle = _app.handle();
-            let ai_state = _app.state::<t_ai::AiState>();
-            let mut ai_engine = ai_state.0.lock().unwrap();
-            match ai_engine.load_models(app_handle) {
-                Ok(_) => println!("AI Engine started successfully"),
-                Err(e) => {
-                    eprintln!("Failed to start AI Engine: {}", e);
+            // Load the image-text search models off the setup thread. Doing it
+            // here synchronously delayed the event loop, which meant the window
+            // could not be shown and the app looked frozen on launch.
+            let app_handle = _app.handle().clone();
+            tauri::async_runtime::spawn_blocking(move || {
+                let ai_state = app_handle.state::<t_ai::AiState>();
+                let load_state = app_handle.state::<t_ai::ModelLoadState>();
+                let result = {
+                    let mut ai_engine = ai_state.0.lock().unwrap();
+                    ai_engine.load_models(&app_handle)
+                };
+
+                let status = match result {
+                    Ok(_) => t_ai::ModelStatus::Ready,
+                    Err(ref e) => {
+                        eprintln!("Failed to start the image-text search engine: {}", e);
+                        t_ai::ModelStatus::Failed
+                    }
+                };
+                load_state.set(status);
+                let _ = app_handle.emit("model-status", status);
+
+                if let Err(e) = result {
+                    let _ = &e;
                     #[cfg(target_os = "windows")]
                     {
                         let arch_key = if cfg!(target_arch = "aarch64") {
@@ -231,7 +248,7 @@ async fn main() {
                         }
                     }
                 }
-            }
+            });
 
             t_utils::start_folder_mtime_sync(_app.handle().clone());
 
@@ -465,6 +482,7 @@ async fn main() {
             t_cmds::get_storage_file_info,
             // ai
             t_cmds::check_ai_status,
+            t_cmds::get_model_status,
             t_cmds::get_image_search_model_status,
             t_cmds::set_image_search_model,
             t_cmds::download_multilingual_image_search_model,
