@@ -1254,14 +1254,65 @@ async function onOpenExternalOk() {
   }
 }
 
-// Browse the file's folder and open the image viewer on that file.
+// Wait until the grid is showing `folderPath` and has stopped loading. Startup
+// fires several content refreshes (initial load, index state, library totals),
+// so a single await on getFileList is not enough; require a short quiet period.
+async function waitForFolderContent(folderPath: string, timeoutMs = 10000) {
+  const wanted = normalizePathForCompare(folderPath);
+  const showsFolder = () => {
+    const params: any = currentQueryParams.value || {};
+    const shown = normalizePathForCompare(String(params.searchFolder || params.searchAllSubfolders || ''));
+    return shown === wanted && tempViewMode.value === 'none';
+  };
+  const started = Date.now();
+  let quietSince = 0;
+  while (Date.now() - started < timeoutMs) {
+    const ready = showsFolder() && !isLoading.value;
+    if (ready) {
+      if (!quietSince) quietSince = Date.now();
+      if (Date.now() - quietSince >= 300) return true;
+    } else {
+      quietSince = 0;
+    }
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+  return showsFolder();
+}
+
+// Navigate the sidebar to the file's folder (persistent state, so later
+// startup refreshes keep showing it), then open the image viewer on that file.
 async function showExternalFileInViewer(file: any) {
   const folderPath = getFolderPath(String(file?.file_path || ''));
-  if (!folderPath || !file?.album_id) return;
+  const albumId = Number(file?.album_id || 0);
+  const fileId = Number(file?.id || 0);
+  if (!folderPath || albumId <= 0 || fileId <= 0) return;
 
-  await enterAlbumPreviewMode(file, folderPath);
+  // Do not let the "restore last selected index" logic override our selection.
+  pendingInitialSelectedIndex = -1;
+  hasRestoredInitialSelection = true;
 
-  const position = await getCurrentQueryFilePosition(Number(file.id));
+  const alreadyThere =
+    config.main.sidebarIndex === SIDEBAR.ALBUM &&
+    libConfig.activePane === 'main' &&
+    Number(libConfig.album.id || 0) === albumId &&
+    !libConfig.album.selected &&
+    normalizePathForCompare(String(libConfig.album.folderPath || '')) === normalizePathForCompare(folderPath);
+
+  if (!alreadyThere) {
+    config.main.sidebarIndex = SIDEBAR.ALBUM;
+    libConfig.activePane = 'main';
+    libConfig.album.id = albumId;
+    libConfig.album.folderId = Number(file?.folder_id || 0) || null;
+    libConfig.album.folderPath = folderPath;
+    libConfig.album.selected = false;
+    libConfig.album.activateTick = Number(libConfig.album.activateTick || 0) + 1;
+    await nextTick();
+  }
+  if (tempViewMode.value !== 'none') exitTempViewMode();
+  await updateContent(true);
+  await waitForFolderContent(folderPath);
+
+  const position = await getCurrentQueryFilePosition(fileId);
   const targetIndex = typeof position === 'number' && position >= 0 ? position : 0;
   if (targetIndex > 0) {
     await fetchDataRange(targetIndex, targetIndex + 2);
