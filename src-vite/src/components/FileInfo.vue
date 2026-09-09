@@ -311,23 +311,36 @@
             <template v-if="config.settings.face.enabled && filePersons.length">
               <div class="flex items-center text-[11px] text-base-content/45 min-h-6 py-1.5">{{ $t('sidebar.people') }}</div>
               <div class="flex items-center min-h-6 gap-x-3 gap-y-1 flex-wrap">
-                <button
+                <div
                   v-for="person in filePersons"
                   :key="person.id"
-                  type="button"
-                  class="inline-flex items-center gap-1.5 text-[12px] font-medium text-base-content/70 transition-colors hover:text-primary cursor-pointer"
-                  @click.stop="navigatePerson(person)"
+                  class="group inline-flex items-center gap-1"
+                  @contextmenu.prevent.stop="(e) => openPersonMenu(person.id, e)"
                 >
-                  <span class="w-5 h-5 rounded-full overflow-hidden bg-base-300/70 ring-1 ring-base-content/5 shrink-0 flex items-center justify-center">
-                    <img
-                      v-if="person.thumbnail"
-                      :src="'data:image/jpeg;base64,' + person.thumbnail"
-                      class="w-full h-full object-cover"
+                  <button
+                    type="button"
+                    class="inline-flex items-center gap-1.5 text-[12px] font-medium text-base-content/70 transition-colors hover:text-primary cursor-pointer"
+                    @click.stop="navigatePerson(person)"
+                  >
+                    <span class="w-5 h-5 rounded-full overflow-hidden bg-base-300/70 ring-1 ring-base-content/5 shrink-0 flex items-center justify-center">
+                      <img
+                        v-if="person.thumbnail"
+                        :src="'data:image/jpeg;base64,' + person.thumbnail"
+                        class="w-full h-full object-cover"
+                      />
+                      <IconPerson v-else class="w-3.5 h-3.5 text-base-content/30" />
+                    </span>
+                    {{ person.name || person.id }}
+                  </button>
+                  <span class="invisible group-hover:visible" @click.stop>
+                    <ContextMenu
+                      :ref="(el) => { if (el) personMenus[person.id] = el }"
+                      :iconMenu="IconMore"
+                      :menuItems="() => personMenuItems(person)"
+                      :smallIcon="true"
                     />
-                    <IconPerson v-else class="w-3.5 h-3.5 text-base-content/30" />
                   </span>
-                  {{ person.name || person.id }}
-                </button>
+                </div>
               </div>
             </template>
             </template>
@@ -446,16 +459,28 @@
       </div>
     </div>
   </div>
+
+  <PersonPickerDialog
+    v-if="reassignTarget"
+    :title="$t('person.reassign_title')"
+    :message="$t('person.reassign_message', { name: reassignTarget.name })"
+    :confirmText="$t('person.reassign_ok')"
+    :excludeIds="[reassignTarget.id]"
+    @pick="reassignPerson"
+    @cancel="reassignTarget = null"
+  />
 </template>
 
 <script setup lang="ts">
 import { ref, nextTick, computed, watch, onBeforeUnmount } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/common/toast';
+import ContextMenu from '@/components/ContextMenu.vue';
+import PersonPickerDialog from '@/components/PersonPickerDialog.vue';
 import { useUIStore } from '@/stores/uiStore';
 import { config } from '@/common/config';
 import { isWebViewVideoPlaybackDisabled } from '@/common/video';
-import { renameFile, editImage, getAlbum, getFileCollections, getFileInfo, getMotionPhotoVideoPath, revealPath, getFacesForFile, getPersonThumbnail } from '@/common/api';
+import { renameFile, editImage, getAlbum, getFileCollections, getFileInfo, getMotionPhotoVideoPath, revealPath, getFacesForFile, getPersonThumbnail, assignFace } from '@/common/api';
 import { 
   extractFileName, 
   getFileExtension,
@@ -476,6 +501,7 @@ import {
 } from '@/common/utils';
 import {
   IconClose,
+  IconMore,
   IconRight,
   IconFile,
   IconFolder,
@@ -941,6 +967,82 @@ function navigateLens() {
 function navigateLocation() {
   if (!hasLocation.value) return;
   emit('navigateMetadata', { type: 'location', cc: props.fileInfo?.geo_cc || null, admin1: props.fileInfo?.geo_admin1 || null, name: props.fileInfo?.geo_name || null });
+}
+
+// —— Correcting who the app thinks is in this photo ——
+//
+// Clustering gets it wrong often enough that a photo tagged with the wrong
+// person, and no way to say so, is worse than no tag at all. These act on the
+// faces of one person *within this file*, which is how the mistake is
+// actually seen: "this photo says Alice, but that is Bob".
+const personMenus = ref<Record<number, any>>({});
+const reassignTarget = ref<{ id: number; name: string } | null>(null);
+
+function openPersonMenu(personId: number, event: MouseEvent) {
+  personMenus.value[personId]?.open?.(event.clientX, event.clientY);
+}
+
+function personDisplayName(person: any) {
+  return person?.name || String(person?.id ?? '');
+}
+
+function personMenuItems(person: any) {
+  return [
+    {
+      label: t('person.reassign'),
+      icon: IconPerson,
+      action: () => {
+        reassignTarget.value = { id: person.id, name: personDisplayName(person) };
+      },
+    },
+    {
+      label: t('person.detach'),
+      icon: IconClose,
+      action: () => void detachPerson(person),
+    },
+  ];
+}
+
+/// Every face in this file currently attributed to `personId`.
+async function facesOfPersonInFile(personId: number): Promise<number[]> {
+  const fileId = Number(props.fileInfo?.id || 0);
+  if (!fileId) return [];
+  const faces = await getFacesForFile(fileId);
+  return (faces || [])
+    .filter((face: any) => Number(face?.person_id || 0) === personId)
+    .map((face: any) => Number(face.id))
+    .filter(Boolean);
+}
+
+async function detachPerson(person: any) {
+  const faceIds = await facesOfPersonInFile(Number(person.id));
+  if (faceIds.length === 0) return;
+  try {
+    for (const faceId of faceIds) await assignFace(faceId, null);
+    toast.success(t('person.detach_done', {
+      count: faceIds.length,
+      name: personDisplayName(person),
+    }));
+    await loadFilePersons(Number(props.fileInfo?.id || 0));
+  } catch (error) {
+    toast.error(String(error));
+  }
+}
+
+async function reassignPerson(targetId: number) {
+  const source = reassignTarget.value;
+  reassignTarget.value = null;
+  if (!source || !targetId || targetId === source.id) return;
+
+  const faceIds = await facesOfPersonInFile(source.id);
+  if (faceIds.length === 0) return;
+  try {
+    for (const faceId of faceIds) await assignFace(faceId, targetId);
+    toast.success(t('person.reassign_done', { count: faceIds.length }));
+    await loadFilePersons(Number(props.fileInfo?.id || 0));
+  } catch (error) {
+    toast.error(String(error));
+  }
 }
 
 // People recognized in this file (deduplicated by person id).

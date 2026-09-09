@@ -166,6 +166,16 @@
   </div>
 
   <!-- Delete person confirmation -->
+  <PersonPickerDialog
+    v-if="showMergePicker && selectedPerson"
+    :title="$t('person.merge_title')"
+    :message="$t('person.merge_message', { name: getPersonDisplayName(selectedPerson) })"
+    :confirmText="$t('person.merge_ok')"
+    :excludeIds="[selectedPerson.id]"
+    @pick="handleMergePerson"
+    @cancel="showMergePicker = false"
+  />
+
   <MessageBox
     v-if="showDeletePersonMsgbox"
     :title="$t('msgbox.delete_person.title')"
@@ -207,7 +217,7 @@
 import { ref, onMounted, onUnmounted, computed, nextTick, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { config, libConfig } from '@/common/config';
-import { getPersonsPage, renamePerson, deletePerson, indexFaces, cancelFaceIndex, isFaceIndexing, listenFaceIndexProgress, listenFaceIndexFinished, listenClusterProgress, resetFaces, getFaceStats } from '@/common/api';
+import { getPersonsPage, renamePerson, deletePerson, mergePersons, indexFaces, cancelFaceIndex, isFaceIndexing, listenFaceIndexProgress, listenFaceIndexFinished, listenClusterProgress, resetFaces, getFaceStats } from '@/common/api';
 import { SIDEBAR } from '@/common/constants';
 import { 
   IconPerson, 
@@ -220,6 +230,8 @@ import {
 } from '@/common/icons';
 
 import ContextMenu from '@/components/ContextMenu.vue';
+import PersonPickerDialog from '@/components/PersonPickerDialog.vue';
+import { useToast } from '@/common/toast';
 import MessageBox from '@/components/MessageBox.vue';
 
 const props = defineProps({
@@ -321,9 +333,32 @@ const personPanelMenuItems = computed(() => [
 
 // message boxes
 const showDeletePersonMsgbox = ref(false);
+const toast = useToast();
 const showResetFacesMsgbox = ref(false);
 
 // more menuitems
+// —— Merging two groups that are really one person ——
+const showMergePicker = ref(false);
+
+async function handleMergePerson(targetId: number) {
+  const source = selectedPerson.value;
+  showMergePicker.value = false;
+  if (!source || !targetId || targetId === source.id) return;
+
+  try {
+    const moved = await mergePersons(targetId, [source.id]);
+    toast.success(t('person.merge_done', { count: Number(moved || 0) }));
+    // The merged-away group is gone and the target's count has changed.
+    if (libConfig.person) {
+      libConfig.person.id = targetId;
+      libConfig.person.name = null;
+    }
+    await loadPersons(true);
+  } catch (error) {
+    toast.error(String(error));
+  }
+}
+
 const getMoreMenuItems = () => [
   {
     label: localeMsg.value.menu?.person?.rename || 'Rename',
@@ -336,6 +371,13 @@ const getMoreMenuItems = () => [
           personInputRef.value[0].focus();
         }
       });
+    }
+  },
+  {
+    label: localeMsg.value.menu?.person?.merge_into || 'Merge into...',
+    icon: IconPerson,
+    action: () => {
+      if (selectedPerson.value) showMergePicker.value = true;
     }
   },
   { label: "-", action: null },

@@ -3565,6 +3565,31 @@ pub fn delete_person(person_id: i64) -> Result<usize, String> {
     Person::delete(person_id).map_err(|e| format!("Error while deleting person: {}", e))
 }
 
+/// Fold several people into one. Clustering splits the same person across
+/// groups more often than it confuses two people, so this is the correction
+/// that gets used most.
+#[tauri::command]
+pub fn merge_persons(target_id: i64, source_ids: Vec<i64>) -> Result<usize, String> {
+    crate::t_person::merge_persons(target_id, &source_ids)
+}
+
+/// Point one face at a different person, or at nobody when `person_id` is
+/// omitted.
+#[tauri::command]
+pub fn assign_face(face_id: i64, person_id: Option<i64>) -> Result<(), String> {
+    crate::t_person::assign_face(face_id, person_id)?;
+    crate::t_person::prune_empty_persons()?;
+    Ok(())
+}
+
+/// Pull one face out into a person of its own.
+#[tauri::command]
+pub fn split_face_to_new_person(face_id: i64, name: Option<String>) -> Result<i64, String> {
+    let id = crate::t_person::split_face_to_new_person(face_id, name.as_deref())?;
+    crate::t_person::prune_empty_persons()?;
+    Ok(id)
+}
+
 /// get faces for a file
 #[tauri::command]
 pub fn get_faces_for_file(file_id: i64) -> Result<Vec<t_sqlite::Face>, String> {

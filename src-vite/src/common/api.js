@@ -2273,3 +2273,20 @@ export async function listenRenameProgress(callback) {
 export async function listenRenameFinished(callback) {
   return await listen('rename-finished', callback);
 }
+
+// correcting face assignments
+
+/// Fold `sourceIds` into `targetId`; returns how many faces moved.
+export async function mergePersons(targetId, sourceIds) {
+  return await invoke('merge_persons', { targetId, sourceIds });
+}
+
+/// Point one face at another person, or at nobody when personId is null.
+export async function assignFace(faceId, personId) {
+  return await invoke('assign_face', { faceId, personId });
+}
+
+/// Pull one face out into a person of its own; returns the new person id.
+export async function splitFaceToNewPerson(faceId, name = null) {
+  return await invoke('split_face_to_new_person', { faceId, name });
+}

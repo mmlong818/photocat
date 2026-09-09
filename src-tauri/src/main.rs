@@ -36,6 +36,7 @@ mod t_migration;
 mod t_motion_photo;
 mod t_ocr;
 mod t_pasteboard;
+mod t_person;
 mod t_protocol;
 mod t_rename;
 mod t_similar;
@@ -481,6 +482,9 @@ async fn main() {
             t_cmds::rename_person,
             t_cmds::delete_person,
             t_cmds::get_faces_for_file,
+            t_cmds::merge_persons,
+            t_cmds::assign_face,
+            t_cmds::split_face_to_new_person,
             t_cmds::get_person_thumbnail,
             // dedup
             t_cmds::dedup_start_scan,

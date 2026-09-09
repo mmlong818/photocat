@@ -707,6 +707,7 @@
     "person": {
       "index_faces": "索引人脸",
       "reset_index": "重置索引",
+      "merge_into": "合并到…",
       "unnamed": "未命名人物",
       "search": "搜索人物"
     },
@@ -1156,6 +1157,23 @@
       "use_external_generic": "请尝试使用外部播放器打开。",
       "use_external_with_app": "请尝试在 {app} 中打开。",
       "unknown": "未知错误"
+    }
+  },
+  "person": {
+    "merge_title": "合并人物",
+    "merge_message": "把「{name}」的所有人脸并入你选择的人物，「{name}」随后消失。",
+    "merge_ok": "合并",
+    "merge_done": "已并入 {count} 张人脸。",
+    "reassign_title": "改为其他人物",
+    "reassign_message": "把这张照片中识别为「{name}」的人脸改派给你选择的人物。",
+    "reassign_ok": "改派",
+    "reassign_done": "已改派 {count} 张人脸。",
+    "detach": "不是这个人",
+    "detach_done": "已从「{name}」中移除 {count} 张人脸。",
+    "reassign": "改为其他人物…",
+    "picker": {
+      "search": "搜索人物",
+      "empty": "没有其他人物"
     }
   },
   "rename": {

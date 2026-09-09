@@ -707,6 +707,7 @@
     "person": {
       "index_faces": "얼굴 인덱싱",
       "reset_index": "인덱스 초기화",
+      "merge_into": "병합 대상…",
       "unnamed": "이름 없는 인물",
       "search": "인물 검색"
     },
@@ -1156,6 +1157,23 @@
       "use_external_generic": "외부 플레이어에서 열어보세요.",
       "use_external_with_app": "대신 {app}에서 열어보세요.",
       "unknown": "알 수 없는 오류"
+    }
+  },
+  "person": {
+    "merge_title": "Merge person",
+    "merge_message": "Move every face of {name} into the person you choose. {name} then disappears.",
+    "merge_ok": "Merge",
+    "merge_done": "Moved {count} faces.",
+    "reassign_title": "Reassign to another person",
+    "reassign_message": "Move the faces recognised as {name} in this photo to the person you choose.",
+    "reassign_ok": "Reassign",
+    "reassign_done": "Reassigned {count} faces.",
+    "detach": "Not this person",
+    "detach_done": "Removed {count} faces from {name}.",
+    "reassign": "Reassign to another person...",
+    "picker": {
+      "search": "Search people",
+      "empty": "No other people"
     }
   },
   "rename": {

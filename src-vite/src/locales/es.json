@@ -707,6 +707,7 @@
     "person": {
       "index_faces": "Indexar caras",
       "reset_index": "Reiniciar índice",
+      "merge_into": "Combinar con…",
       "unnamed": "Persona sin nombre",
       "search": "Buscar personas"
     },
@@ -1156,6 +1157,23 @@
       "use_external_generic": "Intente abrirlo en el reproductor externo.",
       "use_external_with_app": "Intente abrir en {app} en su lugar.",
       "unknown": "Error desconocido"
+    }
+  },
+  "person": {
+    "merge_title": "Merge person",
+    "merge_message": "Move every face of {name} into the person you choose. {name} then disappears.",
+    "merge_ok": "Merge",
+    "merge_done": "Moved {count} faces.",
+    "reassign_title": "Reassign to another person",
+    "reassign_message": "Move the faces recognised as {name} in this photo to the person you choose.",
+    "reassign_ok": "Reassign",
+    "reassign_done": "Reassigned {count} faces.",
+    "detach": "Not this person",
+    "detach_done": "Removed {count} faces from {name}.",
+    "reassign": "Reassign to another person...",
+    "picker": {
+      "search": "Search people",
+      "empty": "No other people"
     }
   },
   "rename": {

@@ -707,6 +707,7 @@
     "person": {
       "index_faces": "Индексировать лица",
       "reset_index": "Сбросить индекс",
+      "merge_into": "Объединить с…",
       "unnamed": "Безымянный человек",
       "search": "Поиск людей"
     },
@@ -1156,6 +1157,23 @@
       "use_external_generic": "Попробуйте открыть во внешнем плеере.",
       "use_external_with_app": "Попробуйте открыть в {app}.",
       "unknown": "Неизвестная ошибка"
+    }
+  },
+  "person": {
+    "merge_title": "Merge person",
+    "merge_message": "Move every face of {name} into the person you choose. {name} then disappears.",
+    "merge_ok": "Merge",
+    "merge_done": "Moved {count} faces.",
+    "reassign_title": "Reassign to another person",
+    "reassign_message": "Move the faces recognised as {name} in this photo to the person you choose.",
+    "reassign_ok": "Reassign",
+    "reassign_done": "Reassigned {count} faces.",
+    "detach": "Not this person",
+    "detach_done": "Removed {count} faces from {name}.",
+    "reassign": "Reassign to another person...",
+    "picker": {
+      "search": "Search people",
+      "empty": "No other people"
     }
   },
   "rename": {
