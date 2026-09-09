@@ -44,7 +44,14 @@ def die(message):
 
 def run(args, cwd=None, env=None):
     print("$ " + " ".join(str(a) for a in args))
-    result = subprocess.run(args, cwd=cwd or ROOT, env=env, shell=False)
+    # On Windows the tools we call are .cmd shims, which CreateProcess will not
+    # find from a bare name. Resolve through PATH ourselves rather than handing
+    # the whole line to a shell.
+    resolved = shutil.which(str(args[0]))
+    if not resolved:
+        die("not on PATH: " + str(args[0]))
+    result = subprocess.run([resolved] + [str(a) for a in args[1:]],
+                            cwd=cwd or ROOT, env=env, shell=False)
     if result.returncode != 0:
         die("command failed: " + " ".join(str(a) for a in args))
 
