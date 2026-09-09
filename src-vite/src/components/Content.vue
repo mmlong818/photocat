@@ -638,6 +638,13 @@
     @cancel="ocrCandidates = []"
   />
 
+  <SidecarDialog
+    v-if="sidecarCandidates.length > 0"
+    :files="sidecarCandidates"
+    @complete="onSidecarComplete"
+    @cancel="sidecarCandidates = []"
+  />
+
   <ExternalAppsDialog
     v-if="showExternalAppsDialog"
     @cancel="showExternalAppsDialog = false"
@@ -815,6 +822,7 @@ import AddToCollectionDialog from '@/components/AddToCollectionDialog.vue';
 import ExternalAppsDialog from '@/components/ExternalAppsDialog.vue';
 import ExportDialog from '@/components/ExportDialog.vue';
 import OcrDialog from '@/components/OcrDialog.vue';
+import SidecarDialog from '@/components/SidecarDialog.vue';
 import FileInfo from '@/components/FileInfo.vue';
 import Breadcrumb from '@/components/Breadcrumb.vue';
 import DedupPane from '@/components/DedupPane.vue';
@@ -2158,6 +2166,7 @@ const showExternalOpenWarningMsgbox = ref(false);
 const showExternalAppsDialog = ref(false);
 const exportCandidates = ref<any[]>([]);
 const ocrCandidates = ref<any[]>([]);
+const sidecarCandidates = ref<any[]>([]);
 const pendingExternalOpen = ref<{ paths: string[]; appPath: string } | null>(null);
 const permanentDeleteChecked = ref(false);
 const deletePermanently = ref(false);
@@ -4221,6 +4230,7 @@ function handleItemAction(payload: { action: string, index: number }) {
     'set-desktop-wallpaper': () => void clickSetDesktopWallpaper(),
     'export-selected': () => void onExportSelected(),
     'recognize-text': () => void onRecognizeText(),
+    'metadata-sidecars': () => void onMetadataSidecars(),
   };
 
   if ((actionMap as any)[action]) {
@@ -8399,6 +8409,21 @@ const resolveConflictPolicy = async (
     return { policy: applyAllPolicy, applyAll: true };
   }
   return requestFileConflict(name, destPath, showApplyAll, !isSamePath);
+}
+
+// Move ratings, tags and notes between the library and .xmp files beside the
+// originals, so the organising work can leave with the photos.
+const onMetadataSidecars = async () => {
+  const files = await getFilesForFolderAction();
+  if (!files || files.length === 0) return;
+  sidecarCandidates.value = files.filter((file: any) => file && file.id);
+}
+
+// An import writes straight into the database, so the grid has to re-read.
+const onSidecarComplete = (result: any) => {
+  if (result?.direction === 'import' && Number(result?.changed) > 0) {
+    void updateContent(true);
+  }
 }
 
 // Read the words out of the selected images so they become searchable.

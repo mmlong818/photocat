@@ -2218,3 +2218,26 @@ export async function listenOcrProgress(callback) {
 export async function listenOcrFinished(callback) {
   return await listen('ocr-finished', callback);
 }
+
+// metadata sidecars
+
+/// direction is 'export' (database to .xmp files) or 'import' (the reverse).
+export async function transferMetadataSidecars(fileIds, direction) {
+  return await invoke('transfer_metadata_sidecars', { fileIds, direction });
+}
+
+export async function cancelMetadataSidecars() {
+  try {
+    return await invoke('cancel_metadata_sidecars');
+  } catch (error) {
+    console.error('cancelMetadataSidecars error:', error);
+  }
+}
+
+export async function listenSidecarProgress(callback) {
+  return await listen('sidecar-progress', callback);
+}
+
+export async function listenSidecarFinished(callback) {
+  return await listen('sidecar-finished', callback);
+}

@@ -654,6 +654,7 @@
       "refresh_subfolders": "Actualiser les sous-dossiers"
     },
     "file": {
+      "metadata_sidecars": "Fichiers annexes de métadonnées…",
       "recognize_text": "Reconnaître le texte…",
       "export_selected": "Exporter…",
       "new_folder": "Nouveau dossier",
@@ -1155,6 +1156,22 @@
       "use_external_with_app": "Essayez d'ouvrir dans {app} à la place.",
       "unknown": "Erreur inconnue"
     }
+  },
+  "sidecar": {
+    "title": "Metadata sidecars",
+    "summary": "Working on {count} selected items.",
+    "export": "Export to sidecars",
+    "export_hint": "Write ratings, favorites, tags and notes into .xmp files beside the originals, in the form Lightroom, digiKam and others read. The originals are not modified.",
+    "import": "Import from sidecars",
+    "import_hint": "Read the .xmp files beside the originals and bring their ratings, tags and descriptions into the library. Nothing is cleared, and missing tags are created.",
+    "naming": "RAW files get photo.xmp and everything else gets photo.jpg.xmp, matching what Adobe tools and digiKam respectively look for.",
+    "start": "Start",
+    "stop": "Stop",
+    "working": "Working...",
+    "counts": "{processed}/{total} · {changed} done · {skipped} skipped · {failed} failed",
+    "done_export": "Wrote {changed} sidecars; {skipped} had nothing to record.",
+    "done_import": "Imported {changed} items; {skipped} had no sidecar.",
+    "done_cancelled": "Stopped after {processed} items."
   },
   "ocr": {
     "title": "Recognize text",

@@ -654,6 +654,7 @@
       "refresh_subfolders": "刷新子文件夹"
     },
     "file": {
+      "metadata_sidecars": "元数据附属文件…",
       "recognize_text": "识别文字…",
       "export_selected": "导出…",
       "new_folder": "新建文件夹",
@@ -1155,6 +1156,22 @@
       "use_external_with_app": "请尝试在 {app} 中打开。",
       "unknown": "未知错误"
     }
+  },
+  "sidecar": {
+    "title": "元数据附属文件",
+    "summary": "对选中的 {count} 个项目操作。",
+    "export": "导出到附属文件",
+    "export_hint": "把评分、收藏、标签和备注写进原文件旁边的 .xmp 文件，Lightroom、digiKam 等软件都能读。原文件不会被改动。",
+    "import": "从附属文件导入",
+    "import_hint": "读取原文件旁边的 .xmp，把里面的评分、标签和说明写进图库。已有内容不会被清空，标签不存在时会自动创建。",
+    "naming": "RAW 文件写成 photo.xmp，其余写成 photo.jpg.xmp，分别是 Adobe 系与 digiKam 系的惯例。",
+    "start": "开始",
+    "stop": "停止",
+    "working": "处理中…",
+    "counts": "{processed}/{total} · 已处理 {changed} · 跳过 {skipped} · 失败 {failed}",
+    "done_export": "已写出 {changed} 个附属文件，{skipped} 个没有可写内容。",
+    "done_import": "已导入 {changed} 个项目，{skipped} 个没有附属文件。",
+    "done_cancelled": "已停止，处理了 {processed} 个。"
   },
   "ocr": {
     "title": "识别文字",

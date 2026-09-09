@@ -43,6 +43,7 @@ mod t_storage;
 mod t_utils;
 mod t_vectors;
 mod t_video;
+mod t_xmp;
 
 /// The main function is the entry point for the Tauri application.
 /// Bring the main window to the front (used when the OS hands us a file).
@@ -140,6 +141,7 @@ async fn main() {
         .manage(t_vectors::VectorCacheState::default())
         .manage(t_export::ExportCancellation::default())
         .manage(t_ocr::OcrCancellation::default())
+        .manage(t_xmp::SidecarCancellation::default())
         .setup(|_app| {
             // The identifier decides where app data lives, so it has to be set
             // before any other code resolves a data path.
@@ -388,6 +390,8 @@ async fn main() {
             t_cmds::recognize_text,
             t_cmds::cancel_recognize_text,
             t_cmds::clear_recognized_text,
+            t_cmds::transfer_metadata_sidecars,
+            t_cmds::cancel_metadata_sidecars,
             t_cmds::copy_images,
             t_cmds::rename_file,
             t_cmds::move_file,

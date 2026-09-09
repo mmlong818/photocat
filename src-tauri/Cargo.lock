@@ -35,6 +35,7 @@ dependencies = [
  "pinyin",
  "pkg-config",
  "png 0.18.1",
+ "quick-xml 0.38.4",
  "rand 0.8.5",
  "reqwest 0.12.28",
  "rstar",

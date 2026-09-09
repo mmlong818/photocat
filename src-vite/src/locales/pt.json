@@ -654,6 +654,7 @@
       "refresh_subfolders": "Atualizar subpastas"
     },
     "file": {
+      "metadata_sidecars": "Arquivos anexos de metadados…",
       "recognize_text": "Reconhecer texto…",
       "export_selected": "Exportar…",
       "new_folder": "Nova pasta",
@@ -1155,6 +1156,22 @@
       "use_external_with_app": "Tente abrir no {app} em vez disso.",
       "unknown": "Erro desconhecido"
     }
+  },
+  "sidecar": {
+    "title": "Metadata sidecars",
+    "summary": "Working on {count} selected items.",
+    "export": "Export to sidecars",
+    "export_hint": "Write ratings, favorites, tags and notes into .xmp files beside the originals, in the form Lightroom, digiKam and others read. The originals are not modified.",
+    "import": "Import from sidecars",
+    "import_hint": "Read the .xmp files beside the originals and bring their ratings, tags and descriptions into the library. Nothing is cleared, and missing tags are created.",
+    "naming": "RAW files get photo.xmp and everything else gets photo.jpg.xmp, matching what Adobe tools and digiKam respectively look for.",
+    "start": "Start",
+    "stop": "Stop",
+    "working": "Working...",
+    "counts": "{processed}/{total} · {changed} done · {skipped} skipped · {failed} failed",
+    "done_export": "Wrote {changed} sidecars; {skipped} had nothing to record.",
+    "done_import": "Imported {changed} items; {skipped} had no sidecar.",
+    "done_cancelled": "Stopped after {processed} items."
   },
   "ocr": {
     "title": "Recognize text",

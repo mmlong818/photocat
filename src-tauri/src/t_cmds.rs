@@ -49,6 +49,13 @@ impl Default for ImportState {
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+struct SidecarFinished {
+    result: Option<crate::t_xmp::SidecarResult>,
+    error: Option<String>,
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct OcrFinished {
     result: Option<crate::t_ocr::OcrResult>,
     error: Option<String>,
@@ -1417,6 +1424,154 @@ pub fn export_files(
         let _ = app_handle.emit("export-finished", payload);
     });
 
+    Ok(())
+}
+
+/// Copy the organisation stored in the database out to XMP sidecar files, or
+/// read sidecars back in. Returns as soon as the work is queued; the caller
+/// follows `sidecar-progress` and waits for `sidecar-finished`.
+#[tauri::command]
+pub fn transfer_metadata_sidecars(
+    app_handle: AppHandle,
+    state: State<crate::t_xmp::SidecarCancellation>,
+    file_ids: Vec<i64>,
+    direction: crate::t_xmp::SidecarDirection,
+) -> Result<(), String> {
+    let shared = state.0.clone();
+    crate::t_xmp::begin(&shared)?;
+
+    let files = match AFile::get_files_by_ids(&file_ids) {
+        Ok(files) => files,
+        Err(e) => {
+            crate::t_xmp::finish(&shared);
+            return Err(e);
+        }
+    };
+
+    let progress_handle = app_handle.clone();
+    let cancel_flag = shared.clone();
+    let is_cancelled =
+        move || cancel_flag.cancelled.load(std::sync::atomic::Ordering::SeqCst);
+
+    tauri::async_runtime::spawn_blocking(move || {
+        let report = |progress: crate::t_xmp::SidecarProgress| {
+            let _ = progress_handle.emit("sidecar-progress", progress);
+        };
+
+        let result = match direction {
+            crate::t_xmp::SidecarDirection::Export => {
+                let prepared = files
+                    .into_iter()
+                    .filter_map(|file| {
+                        let file_id = file.id?;
+                        let file_path = file.file_path.clone()?;
+                        let tags = ATag::get_tags_for_file(file_id)
+                            .map(|tags| tags.into_iter().map(|tag| tag.name).collect())
+                            .unwrap_or_default();
+                        Some(crate::t_xmp::FileMetadata {
+                            file_id,
+                            file_path,
+                            rating: file.rating.unwrap_or(0),
+                            culling_flag: file.culling_flag.unwrap_or(0),
+                            is_favorite: file.is_favorite.unwrap_or(false),
+                            comments: file.comments.clone(),
+                            tags,
+                        })
+                    })
+                    .collect::<Vec<_>>();
+                crate::t_xmp::export_all(prepared, report, is_cancelled)
+            }
+            crate::t_xmp::SidecarDirection::Import => {
+                let prepared = files
+                    .into_iter()
+                    .filter_map(|file| Some((file.id?, file.file_path.clone()?)))
+                    .collect::<Vec<_>>();
+                let (found, mut result) = crate::t_xmp::import_all(prepared, report, is_cancelled);
+                let applied = apply_imported_metadata(found);
+                // Report how many files the database actually took, not how
+                // many sidecars merely existed.
+                result.changed = applied;
+                result
+            }
+        };
+
+        crate::t_xmp::finish(&shared);
+        let _ = app_handle.emit(
+            "sidecar-finished",
+            SidecarFinished { result: Some(result), error: None },
+        );
+    });
+
+    Ok(())
+}
+
+/// Write what the sidecars said into the database. Tags are created on demand
+/// so keywords from another program survive the trip.
+fn apply_imported_metadata(entries: Vec<crate::t_xmp::ImportedMetadata>) -> usize {
+    let mut tag_ids: std::collections::HashMap<String, i64> = std::collections::HashMap::new();
+    if let Ok(existing) = ATag::get_all(0, 0) {
+        for tag in existing {
+            tag_ids.insert(tag.name.to_lowercase(), tag.id);
+        }
+    }
+
+    let mut applied = 0_usize;
+    for entry in entries {
+        let mut touched = false;
+
+        if let Some(rating) = entry.rating {
+            if AFile::update_column(entry.file_id, "rating", &rating.clamp(0, 5)).is_ok() {
+                touched = true;
+            }
+        }
+        if entry.culling_reject
+            && AFile::update_column(entry.file_id, "culling_flag", &2_i32).is_ok()
+        {
+            touched = true;
+        }
+        if let Some(is_favorite) = entry.is_favorite {
+            if is_favorite && AFile::update_column(entry.file_id, "is_favorite", &true).is_ok() {
+                touched = true;
+            }
+        }
+        if let Some(description) = entry.description.as_deref().filter(|d| !d.is_empty()) {
+            if AFile::update_column(entry.file_id, "comments", &description).is_ok() {
+                touched = true;
+            }
+        }
+        for name in entry.tags {
+            let key = name.to_lowercase();
+            let tag_id = match tag_ids.get(&key) {
+                Some(id) => *id,
+                None => match ATag::add(&name) {
+                    Ok(tag) => {
+                        tag_ids.insert(key, tag.id);
+                        tag.id
+                    }
+                    Err(_) => continue,
+                },
+            };
+            if ATag::add_tag_to_file(entry.file_id, tag_id).is_ok() {
+                touched = true;
+            }
+        }
+
+        if touched {
+            applied += 1;
+        }
+    }
+    applied
+}
+
+/// Ask a running metadata transfer to stop after the file it is on.
+#[tauri::command]
+pub fn cancel_metadata_sidecars(
+    state: State<crate::t_xmp::SidecarCancellation>,
+) -> Result<(), String> {
+    state
+        .0
+        .cancelled
+        .store(true, std::sync::atomic::Ordering::SeqCst);
     Ok(())
 }
 

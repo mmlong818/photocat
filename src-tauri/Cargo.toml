@@ -78,6 +78,8 @@ ort = { version = "=2.0.0-rc.10", default-features = false, features = [
 ndarray = "0.16"
 tokenizers = { version = "0.20", default-features = false, features = ["onig"] }
 uuid = { version = "1", features = ["v4"] }
+# Already in the tree via other crates; used directly to read XMP sidecars.
+quick-xml = "0.38"
 blake3 = "1.8.3"
 sha2 = "0.10"
 zip = { version = "2", default-features = false, features = ["deflate"] }

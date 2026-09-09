@@ -4,6 +4,7 @@ import { SIDEBAR } from '@/common/constants';
 import { DEFAULT_PLATFORM, getShortcutLabel, ShortcutActionId } from '@/common/shortcuts';
 import {
   IconDownload,
+  IconInformation,
   IconMonitor,
   IconSearch,
   IconPrint,
@@ -100,6 +101,12 @@ export const useFileMenuItems = (
         icon: markRaw(IconSearch),
         disabled: kind !== 'image' || selectionCount < 1,
         action: createAction('recognize-text'),
+      },
+      {
+        label: String(localeMsg.value.menu.file.metadata_sidecars || 'Metadata sidecars...'),
+        icon: markRaw(IconInformation),
+        disabled: selectionCount < 1,
+        action: createAction('metadata-sidecars'),
       },
       externalAppMenu(externalAppKind),
     ];
@@ -290,6 +297,11 @@ export const useFileMenuItems = (
         icon: markRaw(IconSearch),
         hidden: f.file_type === 2,
         action: createAction('recognize-text')
+      },
+      {
+        label: String(localeMsg.value.menu.file.metadata_sidecars || 'Metadata sidecars...'),
+        icon: markRaw(IconInformation),
+        action: createAction('metadata-sidecars')
       },
       {
         label: isMac ? localeMsg.value.menu.file.reveal_in_finder : localeMsg.value.menu.file.reveal_in_file_explorer,
