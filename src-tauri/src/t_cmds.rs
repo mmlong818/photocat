@@ -314,7 +314,12 @@ pub fn remove_library(id: &str) -> Result<(), String> {
 
 /// switch to a different library
 #[tauri::command]
-pub async fn switch_library(app_handle: tauri::AppHandle, id: String) -> Result<(), String> {
+pub async fn switch_library(
+    app_handle: tauri::AppHandle,
+    ann_state: State<'_, crate::t_vectors::VectorCacheState>,
+    id: String,
+) -> Result<(), String> {
+    ann_state.invalidate();
     tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
         t_config::switch_library(&id)?;
         t_utils::clear_album_accessibility();
@@ -2975,9 +2980,10 @@ pub fn generate_embedding(state: State<t_ai::AiState>, file_id: i64) -> Result<S
 #[tauri::command]
 pub async fn search_similar_images(
     state: State<'_, t_ai::AiState>,
+    ann_state: State<'_, crate::t_vectors::VectorCacheState>,
     params: ImageSearchParams,
 ) -> Result<Vec<AFile>, String> {
-    AFile::search_similar_images(&state, params)
+    AFile::search_similar_images(&state, &ann_state, params)
         .map_err(|e| format!("Error while searching similar images: {}", e))
 }
 

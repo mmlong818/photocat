@@ -39,6 +39,7 @@ mod t_similar;
 mod t_sqlite;
 mod t_storage;
 mod t_utils;
+mod t_vectors;
 mod t_video;
 
 /// The main function is the entry point for the Tauri application.
@@ -134,6 +135,7 @@ async fn main() {
         .manage(t_cmds::LaunchFiles(std::sync::Mutex::new(launch_files)))
         .manage(t_datadir::MigrationOutcome::default())
         .manage(t_similar::SimilarState::default())
+        .manage(t_vectors::VectorCacheState::default())
         .setup(|_app| {
             // The identifier decides where app data lives, so it has to be set
             // before any other code resolves a data path.

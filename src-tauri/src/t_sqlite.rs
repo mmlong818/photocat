@@ -6301,8 +6301,74 @@ impl AFile {
     }
 
     /// search similar images
+    /// Restrict a candidate id list to the rows semantic search is allowed to
+    /// return. Mirrors the WHERE clause of the exact scan, so runtime-varying
+    /// predicates (folder search-exclusion, unplugged albums, file-type
+    /// filters) keep working without being baked into the vector cache.
+    fn searchable_ids(candidates: &[i64], file_type: i64) -> Result<HashSet<i64>, String> {
+        if candidates.is_empty() {
+            return Ok(HashSet::new());
+        }
+        let conn = open_conn()?;
+        let inaccessible_album_ids = t_utils::inaccessible_album_ids();
+        let mut allowed = HashSet::with_capacity(candidates.len());
+
+        for chunk in candidates.chunks(900) {
+            let placeholders = std::iter::repeat("?")
+                .take(chunk.len())
+                .collect::<Vec<_>>()
+                .join(",");
+            let mut query = format!(
+                "SELECT a.id
+                 FROM afiles a
+                 LEFT JOIN afolders b ON a.folder_id = b.id
+                 WHERE a.embeds IS NOT NULL AND a.id IN ({}) AND {}",
+                placeholders,
+                Self::search_exclusion_condition("b")
+            );
+            if !inaccessible_album_ids.is_empty() {
+                query.push_str(&format!(
+                    " AND b.album_id NOT IN ({})",
+                    inaccessible_album_ids
+                        .iter()
+                        .map(i64::to_string)
+                        .collect::<Vec<_>>()
+                        .join(",")
+                ));
+            }
+            if let Some(ft_condition) = Self::build_file_type_condition(file_type) {
+                query.push_str(" AND ");
+                query.push_str(&ft_condition);
+            }
+
+            let mut stmt = conn.prepare(&query).map_err(|e| e.to_string())?;
+            let rows = stmt
+                .query_map(params_from_iter(chunk.iter()), |row| row.get::<_, i64>(0))
+                .map_err(|e| e.to_string())?;
+            for row in rows {
+                allowed.insert(row.map_err(|e| e.to_string())?);
+            }
+        }
+
+        Ok(allowed)
+    }
+
+    /// Load full rows for `result_ids` and restore that exact order.
+    fn rehydrate_in_order(result_ids: Vec<i64>) -> Result<Vec<Self>, String> {
+        let files = Self::get_files_by_ids(&result_ids)?;
+        let mut files_by_id = files
+            .into_iter()
+            .filter_map(|file| file.id.map(|id| (id, file)))
+            .collect::<HashMap<_, _>>();
+        Ok(result_ids
+            .into_iter()
+            .filter_map(|id| files_by_id.remove(&id))
+            .collect::<Vec<_>>())
+    }
+
     pub fn search_similar_images(
         state: &State<t_ai::AiState>,
+        ann_state: &State<crate::t_vectors::VectorCacheState>,
         params: ImageSearchParams,
     ) -> Result<Vec<Self>, String> {
         // 1. Determine Target Embedding
@@ -6310,7 +6376,28 @@ impl AFile {
         let embedding =
             embedding_opt.ok_or_else(|| "No file_id or search_text provided".to_string())?;
 
-        // 2. Perform Vector Search
+        let threshold = params.threshold.clamp(0.0, 1.0);
+
+        // 2a. Score against the resident vector cache when it holds this
+        // library. Exhaustive, so the result is identical to the scan below;
+        // it declines when the cache is absent, stale or the wrong width.
+        match crate::t_vectors::candidates(ann_state, &embedding, threshold) {
+            Ok(Some(hits)) => {
+                let ids = hits.iter().map(|(id, _)| *id).collect::<Vec<_>>();
+                let allowed = Self::searchable_ids(&ids, params.file_type)?;
+                let result_ids = ids
+                    .into_iter()
+                    .filter(|id| allowed.contains(id))
+                    .collect::<Vec<_>>();
+                let results = Self::rehydrate_in_order(result_ids)?;
+                println!("Returning {} files (cached)", results.len());
+                return Ok(results);
+            }
+            Ok(None) => {}
+            Err(e) => eprintln!("vectors: search failed, scanning the database: {}", e),
+        }
+
+        // 2b. Exact scan over every stored embedding.
         let conn = open_conn()?;
 
         let mut query = "SELECT a.id, a.embeds
@@ -6351,7 +6438,6 @@ impl AFile {
 
         let mut scores: Vec<(i64, f32)> = Vec::new();
 
-        let threshold = params.threshold.clamp(0.0, 1.0);
         let query_norm = embedding
             .iter()
             .map(|value| value * value)
@@ -6373,17 +6459,9 @@ impl AFile {
 
         // Fetch full file info in batches, then restore similarity order.
         let result_ids = scores.iter().map(|(id, _)| *id).collect::<Vec<_>>();
-        let files = Self::get_files_by_ids(&result_ids)?;
-        let mut files_by_id = files
-            .into_iter()
-            .filter_map(|file| file.id.map(|id| (id, file)))
-            .collect::<HashMap<_, _>>();
-        let results = result_ids
-            .into_iter()
-            .filter_map(|id| files_by_id.remove(&id))
-            .collect::<Vec<_>>();
+        let results = Self::rehydrate_in_order(result_ids)?;
 
-        println!("Returning {} files", results.len());
+        println!("Returning {} files (exact)", results.len());
 
         Ok(results)
     }
@@ -9770,4 +9848,50 @@ fn move_or_copy(src: &Path, dst: &Path) -> Result<(), String> {
                 .map_err(|e| format!("Failed to remove source file '{}': {}", src.display(), e))
         }
     }
+}
+
+// ---------------------------------------------------------------------------
+// Read helpers for the approximate nearest-neighbour index (see t_vectors.rs).
+// ---------------------------------------------------------------------------
+
+/// `(rows carrying an embedding, largest such file id)` for the active
+/// library. Cheap enough to run on every search as a staleness check.
+pub fn embedding_fingerprint() -> Result<(i64, i64), String> {
+    let conn = open_conn()?;
+    conn.query_row(
+        "SELECT COUNT(*), COALESCE(MAX(id), 0) FROM afiles WHERE embeds IS NOT NULL",
+        [],
+        |row| Ok((row.get(0)?, row.get(1)?)),
+    )
+    .map_err(|e| e.to_string())
+}
+
+/// Every stored embedding as `(file id, vector)`, for building the index.
+pub fn all_embeddings() -> Result<Vec<(i64, Vec<f32>)>, String> {
+    let conn = open_conn()?;
+    let mut stmt = conn
+        .prepare("SELECT id, embeds FROM afiles WHERE embeds IS NOT NULL")
+        .map_err(|e| e.to_string())?;
+    let rows = stmt
+        .query_map([], |row| {
+            let id: i64 = row.get(0)?;
+            let blob: Vec<u8> = row.get(1)?;
+            Ok((id, blob))
+        })
+        .map_err(|e| e.to_string())?;
+
+    let mut out = Vec::new();
+    for row in rows {
+        let (id, blob) = row.map_err(|e| e.to_string())?;
+        if blob.len() % 4 != 0 || blob.is_empty() {
+            continue;
+        }
+        out.push((
+            id,
+            blob.chunks_exact(4)
+                .map(|c| f32::from_le_bytes([c[0], c[1], c[2], c[3]]))
+                .collect(),
+        ));
+    }
+    Ok(out)
 }

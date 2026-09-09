@@ -25,6 +25,11 @@ strip = true
 [profile.dev.package."*"]
 opt-level = 3
 
+# Tests measure real search cost, so they need optimized code. The release
+# profile cannot be used for tests because it sets panic = "abort".
+[profile.test]
+opt-level = 2
+
 [dependencies]
 tauri = { version = "2", features = [
     "macos-private-api",
