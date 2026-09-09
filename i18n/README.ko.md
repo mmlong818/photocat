@@ -38,7 +38,8 @@ brew install --cask lap
 ## 스크린샷
 
 <p align="center">
-  <img src="../docs/public/screenshots/Lap_0.3.0_main_1.png" alt="Lap 로컬 사진 라이브러리 관리 스크린샷" width="900">
+  <img src="../docs/public/screenshots/lap_library.png" alt="Lap 로컬 사진 라이브러리 관리" width="900">
+  <img src="../docs/public/screenshots/lap_map_view.png" alt="Lap 지도 보기" width="900">
 </p>
 
 ## 왜 Lap인가요?

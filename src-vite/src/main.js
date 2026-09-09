@@ -123,6 +123,15 @@ if (isMainWindow) {
   listen('settings-thumbnailSize-changed', (event) => {
     config.setThumbnailSize(event.payload)
   })
+  listen('settings-rawThumbnailSource-changed', (event) => {
+    config.setRawThumbnailSource(event.payload)
+  })
+  listen('settings-mapProvider-changed', (event) => {
+    config.setMapProvider(event.payload)
+  })
+  listen('settings-tiandituToken-changed', (event) => {
+    config.setTiandituToken(event.payload)
+  })
   listen('settings-gridStyle-changed', (event) => {
     config.setGridStyle(event.payload)
   })
@@ -164,6 +173,9 @@ if (isMainWindow) {
   })
   listen('settings-groupRawJpegPairs-changed', (event) => {
     config.settings.groupRawJpegPairs = event.payload
+  })
+  listen('settings-smallFileFilter-changed', (event) => {
+    config.setSmallFileFilter(event.payload)
   })
   listen('settings-navigatorViewMode-changed', (event) => {
     config.setNavigatorViewMode(event.payload)

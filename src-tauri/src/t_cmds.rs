@@ -17,7 +17,7 @@ use crate::t_similar;
 use crate::t_sqlite::{
     ACamera, ACollection, ACollectionOrder, ACollectionSelectionCount, AFile, AFileCollection, AFolder, ALens, ALocation, ATag, ATagFileState,
     ATagSelectionCount, AThumb, ATimeLine, Album, AlbumDisplayOrder, GroupedQueryResult, ImageSearchParams, Person,
-    PersonPage, QueryParams, SmartQueryParams,
+    PersonPage, PersonPageRequest, QueryParams, SmartQueryParams,
 };
 use crate::t_storage;
 use crate::t_utils;
@@ -34,6 +34,25 @@ use tauri::{AppHandle, Emitter, State};
 
 // cancellation token for indexing
 pub struct IndexCancellation(pub Arc<Mutex<HashMap<i64, bool>>>);
+pub struct ImportCancellation(pub Arc<Mutex<ImportState>>);
+
+pub struct ImportState {
+    cancelled: bool,
+    running: bool,
+}
+
+impl Default for ImportState {
+    fn default() -> Self {
+        Self { cancelled: false, running: false }
+    }
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+struct ImportOrganizeFinished {
+    result: Option<crate::t_utils::ImportOrganizeResult>,
+    error: Option<String>,
+}
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -298,6 +317,7 @@ pub fn remove_library(id: &str) -> Result<(), String> {
 pub async fn switch_library(app_handle: tauri::AppHandle, id: String) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || -> Result<(), String> {
         t_config::switch_library(&id)?;
+        t_utils::clear_album_accessibility();
         t_sqlite::clear_conn_pool();
         t_sqlite::create_db()?;
         Ok(())
@@ -306,6 +326,14 @@ pub async fn switch_library(app_handle: tauri::AppHandle, id: String) -> Result<
     .map_err(|e| format!("Failed to join switch library task: {}", e))??;
 
     t_utils::restore_album_scopes(&app_handle)?;
+    tauri::async_runtime::spawn_blocking(|| -> Result<(), String> {
+        let mut albums = Album::get_all_albums()
+            .map_err(|e| format!("Error while checking albums after switching library: {}", e))?;
+        t_utils::refresh_all_album_accessibility(&mut albums);
+        Ok(())
+    })
+    .await
+    .map_err(|e| format!("Failed to join album accessibility check: {}", e))??;
     t_utils::start_folder_mtime_sync(app_handle);
     Ok(())
 }
@@ -340,8 +368,28 @@ pub fn get_current_library_state() -> Result<LibraryState, String> {
 
 /// get all albums
 #[tauri::command]
-pub fn get_all_albums() -> Result<Vec<Album>, String> {
-    Album::get_all_albums().map_err(|e| format!("Error while getting all albums: {}", e))
+pub fn get_all_albums(refresh_accessibility: bool) -> Result<Vec<Album>, String> {
+    // Best-effort: repair stale covers so the album list never renders a
+    // broken thumbnail.
+    let albums = Album::get_all_albums()
+        .map_err(|e| format!("Error while getting all albums: {}", e))?;
+    for album in &albums {
+        if let Some(album_id) = album.id {
+            let _ = Album::auto_set_cover(album_id);
+        }
+    }
+
+    // Reload to reflect any repaired covers.
+    let mut albums = Album::get_all_albums()
+        .map_err(|e| format!("Error while getting all albums: {}", e))?;
+    if refresh_accessibility {
+        t_utils::refresh_all_album_accessibility(&mut albums);
+    } else {
+        for album in &mut albums {
+            t_utils::apply_album_accessibility(album);
+        }
+    }
+    Ok(albums)
 }
 
 /// Get the indexed folder records used by the album sidebar search.
@@ -363,13 +411,31 @@ pub fn generate_directory_thumbnails(
 /// get one album
 #[tauri::command]
 pub fn get_album(album_id: i64) -> Result<Album, String> {
-    Album::get_album_by_id(album_id).map_err(|e| format!("Error while getting one album: {}", e))
+    let mut album = Album::get_album_by_id(album_id)
+        .map_err(|e| format!("Error while getting one album: {}", e))?;
+    t_utils::apply_album_accessibility(&mut album);
+    Ok(album)
+}
+
+/// Recheck one album root when the user selects that album or one of its folders.
+#[tauri::command]
+pub fn check_album_accessibility(album_id: i64) -> Result<bool, String> {
+    let mut album = Album::get_album_by_id(album_id)
+        .map_err(|e| format!("Error while checking album accessibility: {}", e))?;
+    t_utils::refresh_album_accessibility(&mut album);
+    Ok(album.is_accessible)
 }
 
 /// recount files for an album and return updated album
 #[tauri::command]
 pub fn recount_album(album_id: i64) -> Result<Album, String> {
     Album::recount_album(album_id).map_err(|e| format!("Error while recounting album: {}", e))
+}
+
+#[tauri::command]
+pub fn get_album_visible_counts(small_file_filter: i64) -> Result<HashMap<i64, i64>, String> {
+    Album::get_visible_counts(small_file_filter)
+        .map_err(|e| format!("Error while getting album visible counts: {}", e))
 }
 
 /// add an album
@@ -446,6 +512,7 @@ pub fn index_album(
     state: State<IndexCancellation>,
     album_id: i64,
     thumbnail_size: u32,
+    raw_thumbnail_source: String,
     skip_file_path: Option<String>,
     group_raw_jpeg_pairs: bool,
 ) -> Result<(), String> {
@@ -459,6 +526,7 @@ pub fn index_album(
             cancellation_token,
             album_id,
             thumbnail_size,
+            raw_thumbnail_source == "embedded",
             skip_file_path,
             group_raw_jpeg_pairs,
         )
@@ -736,6 +804,146 @@ pub fn open_external_url(url: &str) -> Result<(), String> {
     opener::open(url).map_err(|e| e.to_string())
 }
 
+/// Set a displayable photo as the desktop wallpaper using the operating
+/// system's default layout. A RAW+JPEG pair supplies its JPEG/HEIC companion.
+#[tauri::command]
+pub async fn set_desktop_wallpaper(
+    app_handle: AppHandle,
+    file_path: &str,
+    companion_path: Option<String>,
+) -> Result<(), String> {
+    let source_path = companion_path
+        .filter(|path| !path.trim().is_empty() && Path::new(path).is_file())
+        .unwrap_or_else(|| file_path.to_string());
+    if !Path::new(&source_path).is_file() {
+        return Err("Wallpaper source file does not exist".to_string());
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        let (sender, receiver) = tokio::sync::oneshot::channel();
+        app_handle
+            .run_on_main_thread(move || {
+                use objc2::MainThreadMarker;
+                use objc2::runtime::AnyObject;
+                use objc2_app_kit::{NSScreen, NSWorkspace, NSWorkspaceDesktopImageOptionKey};
+                use objc2_foundation::{NSDictionary, NSString, NSURL};
+
+                let result = (|| {
+                    let main_thread = MainThreadMarker::new().ok_or_else(|| {
+                        "macOS wallpaper updates must run on the main thread".to_string()
+                    })?;
+                    let screen = NSScreen::mainScreen(main_thread)
+                        .ok_or_else(|| "macOS could not find the primary display".to_string())?;
+                    let path = NSString::from_str(&source_path);
+                    let url = NSURL::fileURLWithPath(&path);
+                    let options: objc2::rc::Retained<
+                        NSDictionary<NSWorkspaceDesktopImageOptionKey, AnyObject>,
+                    > = NSDictionary::new();
+                    unsafe {
+                        NSWorkspace::sharedWorkspace()
+                            .setDesktopImageURL_forScreen_options_error(&url, &screen, &options)
+                    }
+                    .map_err(|error| {
+                        format!(
+                            "macOS could not set the desktop wallpaper: {}",
+                            error.localizedDescription()
+                        )
+                    })
+                })();
+                let _ = sender.send(result);
+            })
+            .map_err(|error| format!("Failed to schedule macOS wallpaper update: {error}"))?;
+        receiver
+            .await
+            .map_err(|_| "macOS wallpaper update was cancelled".to_string())??;
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        use windows::core::HSTRING;
+        use windows::Win32::System::Com::{
+            CLSCTX_ALL, COINIT_APARTMENTTHREADED, CoCreateInstance, CoInitializeEx,
+            CoTaskMemFree, CoUninitialize,
+        };
+        use windows::Win32::UI::Shell::{DesktopWallpaper, IDesktopWallpaper};
+
+        let (sender, receiver) = tokio::sync::oneshot::channel();
+        std::thread::spawn(move || {
+            let result = (|| unsafe {
+                // `CoInitializeEx` returns an HRESULT (rather than a Result) in
+                // windows 0.61, so convert it before attaching application context.
+                CoInitializeEx(None, COINIT_APARTMENTTHREADED)
+                    .ok()
+                    .map_err(|error| format!("Failed to initialize Windows COM: {error}"))?;
+                let update = (|| {
+                    let wallpaper: IDesktopWallpaper = CoCreateInstance(&DesktopWallpaper, None, CLSCTX_ALL)
+                        .map_err(|error| format!("Windows desktop wallpaper service is unavailable: {error}"))?;
+                    let monitor_count = wallpaper.GetMonitorDevicePathCount()
+                        .map_err(|error| format!("Failed to enumerate Windows displays: {error}"))?;
+                    let primary_monitor = (0..monitor_count)
+                        .find_map(|index| {
+                            let monitor = wallpaper.GetMonitorDevicePathAt(index).ok()?;
+                            let monitor_id = monitor.to_hstring();
+                            CoTaskMemFree(Some(monitor.0 as *const std::ffi::c_void));
+                            let rect = wallpaper.GetMonitorRECT(&monitor_id).ok()?;
+                            (rect.left <= 0 && rect.right > 0 && rect.top <= 0 && rect.bottom > 0)
+                                .then_some(monitor_id)
+                        })
+                        .ok_or_else(|| "Windows could not find the primary display".to_string())?;
+                    let path = HSTRING::from(source_path);
+                    wallpaper.SetWallpaper(&primary_monitor, &path)
+                        .map_err(|error| format!("Windows could not set the desktop wallpaper: {error}"))
+                })();
+                CoUninitialize();
+                update
+            })();
+            let _ = sender.send(result);
+        });
+        receiver.await.map_err(|_| "Windows wallpaper update was cancelled".to_string())??;
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        use percent_encoding::{AsciiSet, CONTROLS, utf8_percent_encode};
+
+        const URI_PATH_ENCODE_SET: &AsciiSet = &CONTROLS
+            .add(b' ')
+            .add(b'"')
+            .add(b'#')
+            .add(b'%')
+            .add(b'<')
+            .add(b'>')
+            .add(b'?')
+            .add(b'[')
+            .add(b'\\')
+            .add(b']')
+            .add(b'^')
+            .add(b'`')
+            .add(b'{')
+            .add(b'|')
+            .add(b'}');
+
+        let file_uri = format!("file://{}", utf8_percent_encode(&source_path, URI_PATH_ENCODE_SET));
+        let set_key = |key: &str| Command::new("gsettings")
+            .args(["set", "org.gnome.desktop.background", key, &file_uri])
+            .output();
+        let output = set_key("picture-uri")
+            .map_err(|error| format!("Failed to start GNOME wallpaper service: {error}"))?;
+        if !output.status.success() {
+            return Err(
+                "This Linux desktop environment does not support setting wallpapers from Lap"
+                    .to_string(),
+            );
+        }
+        // GNOME 42+ can use a separate dark wallpaper. Older schemas simply
+        // reject this key, which is safe to ignore after picture-uri succeeds.
+        let _ = set_key("picture-uri-dark");
+    }
+
+    Ok(())
+}
+
 #[tauri::command]
 pub fn get_external_app_display_name(app_path: &str) -> Result<String, String> {
     t_utils::get_external_app_display_name(app_path)
@@ -778,13 +986,6 @@ pub fn open_files_with_app(file_paths: Vec<String>, app_path: &str) -> Result<()
 }
 
 // file
-
-/// get total file count and sum
-#[tauri::command]
-pub fn get_total_count_and_sum() -> Result<(i64, i64), String> {
-    AFile::get_total_count_and_sum()
-        .map_err(|e| format!("Error while getting all files count: {}", e))
-}
 
 /// get query count and sum
 #[tauri::command]
@@ -857,6 +1058,12 @@ pub async fn get_query_file_ids(params: QueryParams) -> Result<Vec<i64>, String>
 }
 
 #[tauri::command]
+pub fn get_library_visible_counts(small_file_filter: i64) -> Result<t_sqlite::LibraryVisibleCounts, String> {
+    AFile::get_library_visible_counts(small_file_filter)
+        .map_err(|e| format!("Error while getting library visible counts: {}", e))
+}
+
+#[tauri::command]
 pub async fn get_query_file_position(
     params: QueryParams,
     file_id: i64,
@@ -870,6 +1077,12 @@ pub async fn get_query_file_position(
 #[tauri::command]
 pub fn list_collections() -> Result<Vec<ACollection>, String> {
     ACollection::list().map_err(|e| format!("Error while listing collections: {}", e))
+}
+
+#[tauri::command]
+pub fn get_collection_counts(small_file_filter: i64) -> Result<HashMap<i64, i64>, String> {
+    ACollection::get_counts(small_file_filter)
+        .map_err(|e| format!("Error while getting collection counts: {}", e))
 }
 
 #[tauri::command]
@@ -1090,7 +1303,6 @@ pub async fn sync_album_folder_mtimes(
     folder_id: i64,
     folder_path: String,
     group_raw_jpeg_pairs: bool,
-    reconcile_missing: bool,
 ) -> Result<crate::t_utils::FolderMtimeSyncResult, String> {
     let sync_app_handle = app_handle.clone();
     let result = tauri::async_runtime::spawn_blocking(move || {
@@ -1100,7 +1312,6 @@ pub async fn sync_album_folder_mtimes(
             folder_id,
             &folder_path,
             group_raw_jpeg_pairs,
-            reconcile_missing,
         )
     })
     .await
@@ -1112,6 +1323,24 @@ pub async fn sync_album_folder_mtimes(
         );
     }
     Ok(result)
+}
+
+/// Refresh the subfolder tree below a folder without scanning its files.
+#[tauri::command]
+pub async fn refresh_album_subfolders(
+    app_handle: tauri::AppHandle,
+    album_id: i64,
+    folder_path: String,
+) -> Result<(), String> {
+    let migrations = tauri::async_runtime::spawn_blocking(move || {
+        t_utils::refresh_album_subfolders(album_id, &folder_path)
+    })
+    .await
+    .map_err(|error| format!("Subfolder refresh task failed: {error}"))??;
+    if !migrations.is_empty() {
+        let _ = app_handle.emit("album-folder-paths-migrated", &migrations);
+    }
+    Ok(())
 }
 
 #[tauri::command]
@@ -1438,6 +1667,52 @@ pub fn import_file(
     let now = chrono::Utc::now().timestamp_millis();
     let (file, _) = AFile::add_to_db(folder_id, &new_path, file_type, now)?;
     Ok(Some(file))
+}
+
+/// Import media from a folder and organize it below the album root by date.
+#[tauri::command]
+pub fn import_and_organize(
+    app_handle: AppHandle,
+    state: State<ImportCancellation>,
+    album_id: i64,
+    source_path: String,
+    destination_path: String,
+    layout: String,
+) -> Result<(), String> {
+    {
+        let mut import = state.0.lock().map_err(|_| "Import cancellation state is unavailable")?;
+        if import.running {
+            return Err("An import is already in progress".to_string());
+        }
+        import.cancelled = false;
+        import.running = true;
+    }
+    let cancellation = state.0.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let result = t_utils::import_and_organize(
+            album_id,
+            &source_path,
+            &destination_path,
+            &layout,
+            |progress| { let _ = app_handle.emit("import-organize-progress", progress); },
+            || cancellation.lock().map(|import| import.cancelled).unwrap_or(true),
+        );
+        if let Ok(mut import) = cancellation.lock() {
+            import.running = false;
+        }
+        let payload = match result {
+            Ok(result) => ImportOrganizeFinished { result: Some(result), error: None },
+            Err(error) => ImportOrganizeFinished { result: None, error: Some(error) },
+        };
+        let _ = app_handle.emit("import-organize-finished", payload);
+    });
+    Ok(())
+}
+
+#[tauri::command]
+pub fn cancel_import_and_organize(state: State<ImportCancellation>) -> Result<(), String> {
+    state.0.lock().map_err(|_| "Import cancellation state is unavailable")?.cancelled = true;
+    Ok(())
 }
 
 /// import an image from a URL into a folder preserving the original file name when possible
@@ -1917,106 +2192,113 @@ pub async fn batch_delete_files(
     files: Vec<BatchDeleteFile>,
     permanently: bool,
 ) -> Result<BatchDeleteResult, String> {
-    tauri::async_runtime::spawn_blocking(move || {
-        struct DeleteGroup {
-            primary_id: i64,
-            primary_path: String,
-            components: Vec<(i64, String)>,
-            aae_sidecars: Vec<String>,
-        }
+    tauri::async_runtime::spawn_blocking(move || delete_files_grouped(files, permanently))
+        .await
+        .map_err(|e| format!("Failed to run batch delete: {}", e))?
+}
 
-        let mut delete_groups = Vec::with_capacity(files.len());
-        let mut seen_ids = HashSet::new();
-        let mut seen_aae_paths = HashSet::new();
-        for file in &files {
-            if !seen_ids.insert(file.file_id) {
-                continue;
-            }
-            let mut component_targets = Vec::new();
-            if let Ok(components) = AFile::live_photo_component_files(file.file_id) {
-                for component in components {
-                    if let (Some(id), Some(path)) = (component.id, component.file_path) {
-                        if seen_ids.insert(id) {
-                            component_targets.push((id, path));
-                        }
+/// Delete files together with their Live Photo and Apple sidecar components.
+/// Kept synchronous so other backend workflows can share the same semantics.
+pub(crate) fn delete_files_grouped(
+    files: Vec<BatchDeleteFile>,
+    permanently: bool,
+) -> Result<BatchDeleteResult, String> {
+    struct DeleteGroup {
+        primary_id: i64,
+        primary_path: String,
+        components: Vec<(i64, String)>,
+        aae_sidecars: Vec<String>,
+    }
+
+    let mut delete_groups = Vec::with_capacity(files.len());
+    let mut seen_ids = HashSet::new();
+    let mut seen_aae_paths = HashSet::new();
+    for file in &files {
+        if !seen_ids.insert(file.file_id) {
+            continue;
+        }
+        let mut component_targets = Vec::new();
+        if let Ok(components) = AFile::live_photo_component_files(file.file_id) {
+            for component in components {
+                if let (Some(id), Some(path)) = (component.id, component.file_path) {
+                    if seen_ids.insert(id) {
+                        component_targets.push((id, path));
                     }
                 }
             }
-            let mut aae_sidecars = Vec::new();
-            for sidecar in apple_aae_sidecar_paths(&file.file_path) {
-                let sidecar_path = sidecar.to_string_lossy().into_owned();
-                if seen_aae_paths.insert(sidecar_path.to_ascii_lowercase()) {
-                    aae_sidecars.push(sidecar_path);
-                }
+        }
+        let mut aae_sidecars = Vec::new();
+        for sidecar in apple_aae_sidecar_paths(&file.file_path) {
+            let sidecar_path = sidecar.to_string_lossy().into_owned();
+            if seen_aae_paths.insert(sidecar_path.to_ascii_lowercase()) {
+                aae_sidecars.push(sidecar_path);
             }
-            delete_groups.push(DeleteGroup {
-                primary_id: file.file_id,
-                primary_path: file.file_path.clone(),
-                components: component_targets,
-                aae_sidecars,
-            });
+        }
+        delete_groups.push(DeleteGroup {
+            primary_id: file.file_id,
+            primary_path: file.file_path.clone(),
+            components: component_targets,
+            aae_sidecars,
+        });
+    }
+
+    let mut deleted_file_ids = Vec::new();
+    let mut failed_count = 0usize;
+    let mut trash_failed_file_ids = Vec::new();
+    for group in &delete_groups {
+        let result = if permanently {
+            t_utils::delete_file_permanently(&group.primary_path)
+        } else {
+            t_utils::trash_path(&group.primary_path)
+        };
+        if result.is_err() {
+            failed_count += 1;
+            if !permanently {
+                trash_failed_file_ids.push(group.primary_id);
+            }
+            continue;
+        }
+        deleted_file_ids.push(group.primary_id);
+        let mut group_failed = false;
+
+        for (file_id, file_path) in &group.components {
+            let result = if permanently {
+                t_utils::delete_file_permanently(file_path)
+            } else {
+                t_utils::trash_path(file_path)
+            };
+            if result.is_ok() {
+                deleted_file_ids.push(*file_id);
+            } else {
+                group_failed = true;
+                eprintln!("Failed to delete Live Photo sidecar: {}", file_path);
+            }
         }
 
-        let mut deleted_file_ids = Vec::new();
-        let mut failed_count = 0usize;
-        let mut trash_failed_file_ids = Vec::new();
-        for group in &delete_groups {
+        for sidecar_path in &group.aae_sidecars {
             let result = if permanently {
-                t_utils::delete_file_permanently(&group.primary_path)
+                t_utils::delete_file_permanently(sidecar_path)
             } else {
-                t_utils::trash_path(&group.primary_path)
+                t_utils::trash_path(sidecar_path)
             };
             if result.is_err() {
-                failed_count += 1;
-                if !permanently {
-                    trash_failed_file_ids.push(group.primary_id);
-                }
-                continue;
-            }
-            deleted_file_ids.push(group.primary_id);
-            let mut group_failed = false;
-
-            for (file_id, file_path) in &group.components {
-                let result = if permanently {
-                    t_utils::delete_file_permanently(file_path)
-                } else {
-                    t_utils::trash_path(file_path)
-                };
-                if result.is_ok() {
-                    deleted_file_ids.push(*file_id);
-                } else {
-                    group_failed = true;
-                    eprintln!("Failed to delete Live Photo sidecar: {}", file_path);
-                }
-            }
-
-            for sidecar_path in &group.aae_sidecars {
-                let result = if permanently {
-                    t_utils::delete_file_permanently(sidecar_path)
-                } else {
-                    t_utils::trash_path(sidecar_path)
-                };
-                if result.is_err() {
-                    group_failed = true;
-                    eprintln!("Failed to delete Apple sidecar: {}", sidecar_path);
-                }
-            }
-
-            if group_failed {
-                failed_count += 1;
+                group_failed = true;
+                eprintln!("Failed to delete Apple sidecar: {}", sidecar_path);
             }
         }
 
-        AFile::batch_delete(&deleted_file_ids)
-            .map_err(|e| format!("Error while deleting files from DB: {}", e))?;
-        Ok(BatchDeleteResult {
-            failed_count,
-            deleted_file_ids,
-            trash_failed_file_ids,
-        })
+        if group_failed {
+            failed_count += 1;
+        }
+    }
+
+    AFile::batch_delete(&deleted_file_ids)
+        .map_err(|e| format!("Error while deleting files from DB: {}", e))?;
+    Ok(BatchDeleteResult {
+        failed_count,
+        deleted_file_ids,
+        trash_failed_file_ids,
     })
-    .await
-    .map_err(|e| format!("Failed to run batch delete: {}", e))?
 }
 
 /// edit a file's comment
@@ -2032,13 +2314,6 @@ pub fn clean_unused_thumbnail_cache() -> Result<t_sqlite::ThumbnailCacheCleanupR
     AThumb::clean_unused_cache()
 }
 
-/// Clear thumbnails for a manually refreshed folder so they are rebuilt at the
-/// current thumbnail quality when the folder is rendered again.
-#[tauri::command]
-pub fn refresh_folder_thumbnails(album_id: i64, folder_path: &str) -> Result<usize, String> {
-    AThumb::delete_for_folder(album_id, folder_path)
-}
-
 /// get a file's thumb image, if not exist, create a new one
 #[tauri::command]
 pub async fn get_file_thumb(
@@ -2048,6 +2323,7 @@ pub async fn get_file_thumb(
     file_type: i64,
     orientation: i32,
     thumbnail_size: u32,
+    raw_thumbnail_source: String,
     force_regenerate: bool,
     thumbnail_seek_percent: Option<u8>,
 ) -> Result<Option<AThumb>, String> {
@@ -2056,6 +2332,7 @@ pub async fn get_file_thumb(
         file_path,
         thumbnail_size,
         orientation,
+        raw_thumbnail_source == "embedded",
         force_regenerate,
     )
     .map_err(|e| format!("Error while getting thumbnail: {}", e))?
@@ -2075,6 +2352,7 @@ pub async fn get_file_thumb(
         file_type,
         orientation,
         thumbnail_size,
+        raw_thumbnail_source == "embedded",
         album_id,
         force_regenerate,
         thumbnail_seek_percent,
@@ -2089,6 +2367,7 @@ pub async fn get_file_thumb_by_id(
     app_handle: tauri::AppHandle,
     file_id: i64,
     thumbnail_size: u32,
+    raw_thumbnail_source: String,
     force_regenerate: bool,
 ) -> Result<Option<AThumb>, String> {
     let Some(file) = AFile::get_file_info(file_id)
@@ -2109,6 +2388,7 @@ pub async fn get_file_thumb_by_id(
         &file_path,
         thumbnail_size,
         orientation,
+        raw_thumbnail_source == "embedded",
         force_regenerate,
     )
     .map_err(|e| format!("Error while getting thumbnail: {}", e))?
@@ -2123,6 +2403,7 @@ pub async fn get_file_thumb_by_id(
         file_type,
         orientation,
         thumbnail_size,
+        raw_thumbnail_source == "embedded",
         file.album_id.unwrap_or(0),
         force_regenerate,
         None,
@@ -2137,7 +2418,9 @@ pub async fn get_file_thumbs(
     app_handle: tauri::AppHandle,
     files: Vec<ThumbRequest>,
     thumbnail_size: u32,
+    raw_thumbnail_source: String,
     force_regenerate: bool,
+    trust_cached: bool,
 ) -> Result<Vec<Option<AThumb>>, String> {
     let mut thumbs = Vec::with_capacity(files.len());
     let file_ids: Vec<i64> = files
@@ -2197,7 +2480,9 @@ pub async fn get_file_thumbs(
                 &file_path,
                 thumbnail_size,
                 orientation,
+                raw_thumbnail_source == "embedded",
                 force_regenerate,
+                trust_cached,
             )
             .map_err(|e| format!("Error while getting thumbnail: {}", e))?
             {
@@ -2213,6 +2498,7 @@ pub async fn get_file_thumbs(
             file_type,
             orientation,
             thumbnail_size,
+            raw_thumbnail_source == "embedded",
             album_id,
             force_regenerate,
             None,
@@ -2501,8 +2787,15 @@ pub fn batch_update_file_metadata(params: BatchFileMetadataUpdate) -> Result<usi
 
 /// get all tags
 #[tauri::command]
-pub fn get_all_tags(sort: i64) -> Result<Vec<ATag>, String> {
-    ATag::get_all(sort).map_err(|e| format!("Error while getting all tags: {}", e))
+pub fn get_all_tags(sort: i64, small_file_filter: i64) -> Result<Vec<ATag>, String> {
+    ATag::get_all(sort, small_file_filter)
+        .map_err(|e| format!("Error while getting all tags: {}", e))
+}
+
+#[tauri::command]
+pub fn get_tag_counts(small_file_filter: i64) -> Result<HashMap<i64, i64>, String> {
+    ATag::get_counts(small_file_filter)
+        .map_err(|e| format!("Error while getting tag counts: {}", e))
 }
 
 /// get tag name by id
@@ -2570,30 +2863,31 @@ pub fn apply_tags_to_files(
 
 /// get camera's taken dates
 #[tauri::command]
-pub fn get_taken_dates(sort: i64) -> Result<Vec<(String, i64)>, String> {
-    AFile::get_taken_dates(sort).map_err(|e| format!("Error while getting taken dates: {}", e))
+pub fn get_taken_dates(sort: i64, small_file_filter: i64) -> Result<Vec<(String, i64)>, String> {
+    AFile::get_taken_dates(sort, small_file_filter)
+        .map_err(|e| format!("Error while getting taken dates: {}", e))
 }
 
 // camera
 
 /// get a file's camera make and model info
 #[tauri::command]
-pub fn get_camera_info(sort: i64) -> Result<Vec<ACamera>, String> {
-    ACamera::get_from_db(sort).map_err(|e| format!("Error while getting camera info: {}", e))
+pub fn get_camera_info(sort: i64, small_file_filter: i64) -> Result<Vec<ACamera>, String> {
+    ACamera::get_from_db(sort, small_file_filter).map_err(|e| format!("Error while getting camera info: {}", e))
 }
 
 /// get a file's lens make and model info
 #[tauri::command]
-pub fn get_lens_info(sort: i64) -> Result<Vec<ALens>, String> {
-    ALens::get_from_db(sort).map_err(|e| format!("Error while getting lens info: {}", e))
+pub fn get_lens_info(sort: i64, small_file_filter: i64) -> Result<Vec<ALens>, String> {
+    ALens::get_from_db(sort, small_file_filter).map_err(|e| format!("Error while getting lens info: {}", e))
 }
 
 // location
 
 /// get a file's location info
 #[tauri::command]
-pub fn get_location_info(sort: i64) -> Result<Vec<ALocation>, String> {
-    ALocation::get_from_db(sort).map_err(|e| format!("Error while getting location info: {}", e))
+pub fn get_location_info(sort: i64, small_file_filter: i64) -> Result<Vec<ALocation>, String> {
+    ALocation::get_from_db(sort, small_file_filter).map_err(|e| format!("Error while getting location info: {}", e))
 }
 
 #[tauri::command]
@@ -2737,6 +3031,11 @@ pub fn similar_list_groups(scope_key: String, limit: i64, offset: i64) -> Result
 }
 
 #[tauri::command]
+pub fn similar_get_overview(scope_key: String) -> Result<serde_json::Value, String> {
+    t_similar::get_overview(&scope_key)
+}
+
+#[tauri::command]
 pub fn similar_get_group(group_id: i64, scope_key: String) -> Result<serde_json::Value, String> {
     t_similar::get_group(group_id, &scope_key)
 }
@@ -2775,8 +3074,8 @@ pub fn index_faces(
 
 /// get face indexing stats
 #[tauri::command]
-pub fn get_face_stats() -> Result<t_face::FaceStats, String> {
-    let (total, processed, unprocessed, faces) = t_sqlite::Face::get_stats_full()
+pub fn get_face_stats(small_file_filter: i64) -> Result<t_face::FaceStats, String> {
+    let (total, processed, unprocessed, faces) = t_sqlite::Face::get_stats_full(small_file_filter)
         .map_err(|e| format!("Error while getting face stats: {}", e))?;
 
     Ok(t_face::FaceStats {
@@ -2824,8 +3123,8 @@ pub fn get_persons(sort: i64) -> Result<Vec<Person>, String> {
 
 /// Get a page of persons with face counts.
 #[tauri::command]
-pub fn get_persons_page(sort: i64, offset: usize, limit: usize, search: String) -> Result<PersonPage, String> {
-    Person::get_page(sort, offset, limit, &search)
+pub fn get_persons_page(request: PersonPageRequest) -> Result<PersonPage, String> {
+    Person::get_page(&request)
         .map_err(|e| format!("Error while getting persons page: {}", e))
 }
 
@@ -2910,11 +3209,12 @@ pub fn dedup_set_keep(group_id: i64, file_id: i64) -> Result<(), String> {
 }
 
 #[tauri::command]
-pub fn dedup_delete_selected(
-    group_ids: Option<Vec<i64>>,
-    file_ids: Option<Vec<i64>>,
+pub async fn dedup_delete(
+    request: crate::t_dedup::DedupDeleteRequest,
 ) -> Result<crate::t_dedup::DedupDeleteResult, String> {
-    crate::t_dedup::delete_selected(group_ids, file_ids)
+    tauri::async_runtime::spawn_blocking(move || crate::t_dedup::delete(request))
+        .await
+        .map_err(|e| format!("Failed to run dedup delete: {}", e))?
 }
 
 // ----------------------------------------------------------------------------

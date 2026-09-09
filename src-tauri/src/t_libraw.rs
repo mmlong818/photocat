@@ -471,29 +471,41 @@ pub fn get_raw_meta(file_path: &str) -> Result<RawMeta, String> {
 }
 
 /// Read the EXIF Orientation tag from in-memory JPEG bytes.
-/// Returns 1 (normal) when absent or unparseable.
-fn jpeg_exif_orientation(data: &[u8]) -> i32 {
+fn jpeg_exif_orientation(data: &[u8]) -> Option<i32> {
     let mut cursor = Cursor::new(data);
-    let exif = match exif::Reader::new().read_from_container(&mut cursor) {
-        Ok(exif) => exif,
-        Err(_) => return 1,
-    };
+    let exif = exif::Reader::new().read_from_container(&mut cursor).ok()?;
     exif.get_field(exif::Tag::Orientation, exif::In::PRIMARY)
         .and_then(|field| field.value.get_uint(0))
         .map(|v| v as i32)
-        .unwrap_or(1)
+        .filter(|orientation| (1..=8).contains(orientation))
 }
 
-pub fn get_raw_preview_image(file_path: &str) -> Result<Option<Vec<u8>>, String> {
+/// Convert LibRaw's RAW-pixel orientation into an EXIF orientation value.
+/// `sizes.flip` applies to the RAW data, so callers must only use this when
+/// an embedded JPEG does not declare its own orientation.
+fn raw_flip_to_exif_orientation(flip: i32) -> Option<i32> {
+    match flip {
+        0 | 360 => Some(1),
+        3 | 180 => Some(3),
+        5 | 270 => Some(8), // 90° counter-clockwise
+        6 | 90 => Some(6),  // 90° clockwise
+        _ => None,
+    }
+}
+
+fn get_embedded_raw_preview_image(file_path: &str) -> Result<Option<Vec<u8>>, String> {
     let mut raw = RawHandle::open(file_path)?;
-    let (raw_width, raw_height, _) = raw.dimensions_with_flip()?;
+    let (raw_width, raw_height, raw_flip) = raw.dimensions_with_flip()?;
     let thumbs = raw.extract_thumbnails();
 
     // Try embedded full-size JPEG first (camera-processed, correct colors)
     for thumb in &thumbs {
         if is_same_size_embedded_jpeg(thumb, raw_width, raw_height) {
-            // Use the JPEG's own EXIF orientation — most reliable source
-            let orient = jpeg_exif_orientation(&thumb.data);
+            // An embedded JPEG can already be rotated. Use its own EXIF tag
+            // when available and only fall back to RAW orientation when absent.
+            let orient = jpeg_exif_orientation(&thumb.data)
+                .or_else(|| raw_flip_to_exif_orientation(raw_flip))
+                .unwrap_or(1);
             if let Ok(image) = image::load_from_memory(&thumb.data) {
                 let image = orient_image(image, orient);
                 return encode_as_jpeg(&image).map(Some);
@@ -501,19 +513,31 @@ pub fn get_raw_preview_image(file_path: &str) -> Result<Option<Vec<u8>>, String>
         }
     }
 
-    // Processed preview: LibRaw dcraw_process auto-rotates, correct WB
-    match render_processed_preview(file_path, 4096) {
-        Ok(bytes) => Ok(Some(bytes)),
-        Err(_) => Ok(None),
-    }
+    Ok(None)
 }
 
-pub fn get_raw_thumbnail(file_path: &str, thumbnail_size: u32) -> Result<Option<Vec<u8>>, String> {
-    // Always use dcraw_process with half_size for thumbnails.
-    // - Guaranteed correct rotation (LibRaw auto-rotates)
-    // - Guaranteed correct colors (full WB pipeline)
-    // - 4x faster than full decode (half_size=1)
-    // Embedded thumbnails have unreliable rotation across camera brands.
+pub fn get_raw_preview_image(
+    file_path: &str,
+    prefer_embedded_jpeg: bool,
+) -> Result<Option<Vec<u8>>, String> {
+    if prefer_embedded_jpeg {
+        if let Some(preview) = get_embedded_raw_preview_image(file_path)? {
+            return Ok(Some(preview));
+        }
+    }
+
+    if let Ok(preview) = render_processed_preview(file_path, 4096) {
+        return Ok(Some(preview));
+    }
+
+    if !prefer_embedded_jpeg {
+        return get_embedded_raw_preview_image(file_path);
+    }
+
+    Ok(None)
+}
+
+fn get_processed_raw_thumbnail(file_path: &str, thumbnail_size: u32) -> Result<Option<Vec<u8>>, String> {
     let raw = RawHandle::open(file_path)?;
     let mut out = LapLibRawImage {
         data: std::ptr::null_mut(),
@@ -548,24 +572,24 @@ pub fn get_raw_thumbnail(file_path: &str, thumbnail_size: u32) -> Result<Option<
             let thumbnail = image.thumbnail(u32::MAX, thumbnail_size);
             return encode_as_jpeg(&thumbnail).map(Some);
         } else {
-            eprintln!(
-                "LibRaw decode_processed_image failed for {}, falling back to embedded thumbnail",
-                file_path
-            );
+            eprintln!("LibRaw decode_processed_image failed for {}", file_path);
         }
     } else {
         if !out.data.is_null() {
             unsafe { lap_libraw_free_buffer(out.data) };
         }
-        eprintln!(
-            "LibRaw dcraw_process failed for {} (likely HE/HE* NEF), falling back to embedded thumbnail",
-            file_path
-        );
+        eprintln!("LibRaw dcraw_process failed for {} (likely HE/HE* NEF)", file_path);
     }
 
-    // Reopen the file for thumbnail extraction — the handle used for
-    // render_preview may be in an undefined state after a data error.
+    Ok(None)
+}
+
+fn get_embedded_jpeg_thumbnail(file_path: &str, thumbnail_size: u32) -> Result<Option<Vec<u8>>, String> {
     let mut raw = RawHandle::open(file_path)?;
+    let raw_orientation = raw
+        .dimensions_with_flip()
+        .ok()
+        .and_then(|(_, _, flip)| raw_flip_to_exif_orientation(flip));
     let thumbs = raw.extract_thumbnails();
     let best = thumbs
         .iter()
@@ -576,7 +600,9 @@ pub fn get_raw_thumbnail(file_path: &str, thumbnail_size: u32) -> Result<Option<
         });
 
     if let Some(thumb) = best {
-        let orient = jpeg_exif_orientation(&thumb.data);
+        let orient = jpeg_exif_orientation(&thumb.data)
+            .or(raw_orientation)
+            .unwrap_or(1);
         if let Ok(image) = image::load_from_memory(&thumb.data) {
             let image = orient_image(image, orient);
             let thumbnail = image.thumbnail(u32::MAX, thumbnail_size);
@@ -587,9 +613,47 @@ pub fn get_raw_thumbnail(file_path: &str, thumbnail_size: u32) -> Result<Option<
     Ok(None)
 }
 
+pub fn get_raw_thumbnail(
+    file_path: &str,
+    thumbnail_size: u32,
+    prefer_embedded_jpeg: bool,
+) -> Result<Option<Vec<u8>>, String> {
+    if prefer_embedded_jpeg {
+        if let Some(thumbnail) = get_embedded_jpeg_thumbnail(file_path, thumbnail_size)? {
+            return Ok(Some(thumbnail));
+        }
+    }
+
+    if let Some(thumbnail) = get_processed_raw_thumbnail(file_path, thumbnail_size)? {
+        return Ok(Some(thumbnail));
+    }
+
+    if !prefer_embedded_jpeg {
+        return get_embedded_jpeg_thumbnail(file_path, thumbnail_size);
+    }
+
+    Ok(None)
+}
+
 pub fn is_tiff_path(file_path: &str) -> bool {
     matches!(
         file_extension(file_path).as_deref(),
         Some("tif") | Some("tiff")
     )
+}
+
+#[cfg(test)]
+mod tests {
+    use super::raw_flip_to_exif_orientation;
+
+    #[test]
+    fn maps_libraw_flip_to_exif_orientation() {
+        assert_eq!(raw_flip_to_exif_orientation(0), Some(1));
+        assert_eq!(raw_flip_to_exif_orientation(3), Some(3));
+        assert_eq!(raw_flip_to_exif_orientation(5), Some(8));
+        assert_eq!(raw_flip_to_exif_orientation(6), Some(6));
+        assert_eq!(raw_flip_to_exif_orientation(90), Some(6));
+        assert_eq!(raw_flip_to_exif_orientation(270), Some(8));
+        assert_eq!(raw_flip_to_exif_orientation(4), None);
+    }
 }

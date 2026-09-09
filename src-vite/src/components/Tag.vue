@@ -68,7 +68,7 @@
               @blur="handleRenameTag"
             />
             <span v-else class="sidebar-item-label">{{ tag.name }}</span>
-            <span v-if="!isRenamingTag && Number(tag.count || 0) > 0" :class="['sidebar-item-count', selectedTag?.id === tag.id ? 'hidden' : 'group-hover:hidden']">{{ Number(tag.count || 0).toLocaleString() }}</span>
+            <span v-if="!isRenamingTag && getTagDisplayCount(tag) > 0" :class="['sidebar-item-count', selectedTag?.id === tag.id ? 'hidden' : 'group-hover:hidden']">{{ getTagDisplayCount(tag).toLocaleString() }}</span>
             <div
               v-if="!isRenamingTag"
               :class="['ml-auto flex flex-row items-center text-base-content/30', selectedTag?.id === tag.id ? '' : 'hidden group-hover:flex']"
@@ -128,7 +128,9 @@ import { listen } from '@tauri-apps/api/event';
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/common/toast';
 import { config, libConfig } from '@/common/config';
-import { getAllTags, renameTag, deleteTag, createTag } from '@/common/api';
+import { useUIStore } from '@/stores/uiStore';
+import { getAllTags, getTagCounts, renameTag, deleteTag, createTag } from '@/common/api';
+import { SIDEBAR } from '@/common/constants';
 import { 
   IconAdd,
   IconClose,
@@ -154,6 +156,8 @@ const props = defineProps({
 const { locale, messages, t } = useI18n();
 const localeMsg = computed(() => messages.value[locale.value] as any);
 const toast = useToast();
+const uiStore = useUIStore();
+const getTagDisplayCount = (tag: any) => Number(libConfig.tag.counts?.[String(tag.id)] || 0);
 
 const emit = defineEmits(['editDataChanged']);
 
@@ -166,6 +170,8 @@ const tagInputRef = ref<HTMLInputElement[]>([]);
 const tagSearch = ref('');
 const isTagSearchFocused = ref(false);
 const isLoadingTags = ref(true);
+let tagCountRequest = 0;
+let isTagMounted = true;
 
 const sortedTags = computed(() => allTags.value);
 const filteredTags = computed(() => {
@@ -217,18 +223,40 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  isTagMounted = false;
+  tagCountRequest++;
   unlistenTagsChanged?.();
 });
 
-watch(() => config.settings.categorySort, () => {
-  loadTags();
+watch(() => [config.settings.categorySort, config.settings.smallFileFilter], () => {
+  if (libConfig.activePane === 'main' && config.main.sidebarIndex === SIDEBAR.TAG) loadTags();
+});
+
+watch(() => [config.main.sidebarIndex, libConfig.activePane], () => {
+  if (libConfig.activePane === 'main' && config.main.sidebarIndex === SIDEBAR.TAG) loadTags();
 });
 
 async function loadTags() {
+  const request = ++tagCountRequest;
+  const libraryId = libConfig._libraryId;
+  const smallFileFilter = Number(config.settings.smallFileFilter || 0);
+  const categorySort = Number(config.settings.categorySort || 0);
   try {
-    const tags = await getAllTags(config.settings.categorySort);
+    const [tags, counts] = await Promise.all([
+      getAllTags(categorySort, smallFileFilter),
+      getTagCounts(smallFileFilter),
+    ]);
+    if (
+      !isTagMounted
+      || request !== tagCountRequest
+      || libraryId !== libConfig._libraryId
+      || smallFileFilter !== Number(config.settings.smallFileFilter || 0)
+      || categorySort !== Number(config.settings.categorySort || 0)
+    ) return;
     if (tags) {
-      allTags.value = tags;
+      const countMap = counts || {};
+      allTags.value = tags.map((tag: any) => ({ ...tag, count: Number(countMap[String(tag.id)] || 0) }));
+      libConfig.tag.counts = countMap;
       if (allTags.value.length > 0) {
         const index = allTags.value.findIndex(tag => tag.id === libConfig.tag.id);
         if (index >= 0) {
@@ -243,7 +271,7 @@ async function loadTags() {
       selectedTag.value = null;
     }
   } finally {
-    isLoadingTags.value = false;
+    if (isTagMounted && request === tagCountRequest) isLoadingTags.value = false;
   }
 }
 
@@ -251,7 +279,8 @@ function selectTag(tag: any) {
   if (isRenamingTag.value) return;
   selectedTag.value = tag;
   libConfig.tag.id = tag.id;
-  void loadTags();
+  uiStore.requestCountUpdate({ source: 'tag', id: Number(tag.id) });
+  libConfig.tag.activateTick = Number(libConfig.tag.activateTick || 0) + 1;
 }
 
 async function handleRenameTag() {

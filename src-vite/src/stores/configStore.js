@@ -69,7 +69,7 @@ export const useConfigStore = defineStore('configStore', {
     },
 
     calendar: {
-      isMonthly: true,    // display monthly or daily calendar
+      view: 'years',      // years | months | days
     },
 
     camera: {
@@ -110,7 +110,7 @@ export const useConfigStore = defineStore('configStore', {
     libraryChangedVersion: 0,
 
     settings: {
-      tabIndex: 0,               // settings tab index (0: general, 1: browse, 2: viewer, 3: search, 4: library, 5: advanced, 6: shortcuts, 7: about)
+      tabIndex: 0,               // settings tab index (0: general, 1: browse, 2: grid, 3: viewer, 4: search, 5: advanced, 6: shortcuts, 7: about)
 
       // general settings
       language: detectDefaultLanguage(), // default language (auto-detect, fallback zh)
@@ -129,9 +129,13 @@ export const useConfigStore = defineStore('configStore', {
       categorySort: 0,            // category_sort_options: 0=name asc, 1=name desc, 2=count asc, 3=count desc
       showSubfolderFiles: false,  // show subfolder files (in album folder view)
       groupRawJpegPairs: false,   // group matching RAW and JPEG/HEIC files
+      smallFileFilter: 0,         // 0 | 160 | 320 | 640: hide files below this width and height
       
       // grid view settings
       thumbnailSize: 512,         // gallery thumbnail quality: 256, 512, or 1024
+      rawThumbnailSource: 'processed', // processed | embedded
+      mapProvider: 'global',      // global | tianditu
+      tiandituToken: '',
       grid: {
         sizePosition: 0,         // grid size slider position (0-1)
         style: 2,                // 0: card view, 1: tile view, 2: justified view, 3: masonry view
@@ -203,6 +207,7 @@ export const useConfigStore = defineStore('configStore', {
     // Cluster threshold values: cosine distance (lower = stricter, higher = looser)
     // [Very High, High, Medium, Low]
     faceClusterThresholds: () => [0.35, 0.45, 0.55, 0.65],
+
   },
 
   actions: {
@@ -276,6 +281,10 @@ export const useConfigStore = defineStore('configStore', {
     setShowSubfolderFiles(showSubfolderFiles) {
       this.settings.showSubfolderFiles = showSubfolderFiles;
     },
+    setSmallFileFilter(smallFileFilter) {
+      const value = Number(smallFileFilter);
+      this.settings.smallFileFilter = [160, 320, 640].includes(value) ? value : 0;
+    },
 
     // video settings
     setVideoMuted(videoMuted) {
@@ -288,6 +297,15 @@ export const useConfigStore = defineStore('configStore', {
     // grid view settings
     setThumbnailSize(thumbnailSize) {
       this.settings.thumbnailSize = thumbnailSize;
+    },
+    setRawThumbnailSource(rawThumbnailSource) {
+      this.settings.rawThumbnailSource = rawThumbnailSource === 'embedded' ? 'embedded' : 'processed';
+    },
+    setMapProvider(mapProvider) {
+      this.settings.mapProvider = mapProvider === 'tianditu' ? 'tianditu' : 'global';
+    },
+    setTiandituToken(tiandituToken) {
+      this.settings.tiandituToken = String(tiandituToken || '').trim();
     },
     setGridStyle(gridStyle) {
       this.settings.grid.style = gridStyle;

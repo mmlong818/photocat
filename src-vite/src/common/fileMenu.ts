@@ -13,7 +13,7 @@ import {
   IconRotate,
   IconCopy,
   IconRename,
-  IconMove,
+  IconFileArrowRight,
   IconTrash,
   IconComment,
   IconPhotoSearch,
@@ -95,6 +95,15 @@ export const useFileMenuItems = (
   const buildSingleFileMenu = (f: any) => {
     const isImage = f.file_type === 1 || f.file_type === 3;
     const isVideo = f.file_type === 2;
+    // Grouped/query rows can omit album_id; the active album is still the
+    // correct target, matching the action handler in Content.vue.
+    const albumId = Number(libConfig.album.id || f.album_id);
+    const canSetAlbumCover = config.main.sidebarIndex === SIDEBAR.ALBUM
+      && libConfig.activePane !== 'collection'
+      && isImage
+      && albumId > 0;
+    const canSetDesktopWallpaper = f.file_type === 1
+      || (f.file_type === 3 && f.media_subtype === 'raw_jpeg_pair' && f.live_photo_video_path);
     return [
       {
         label: localeMsg.value.menu.file.view_in_new_window,
@@ -241,7 +250,7 @@ export const useFileMenuItems = (
         children: [
           {
             label: translate('menu.file.move_within_library'),
-            icon: markRaw(IconMove),
+            icon: markRaw(IconFileArrowRight),
             shortcut: shortcut('file.moveTo'),
             action: createAction('move-within-library')
           },
@@ -283,9 +292,20 @@ export const useFileMenuItems = (
         action: createAction('refresh-file-info')
       },
       {
-        label: localeMsg.value.menu.file.set_album_cover,
-        hidden: config.main.sidebarIndex !== SIDEBAR.ALBUM || libConfig.activePane === 'collection' || !isImage || !Number(f.album_id),
-        action: createAction('set-album-cover')
+        label: localeMsg.value.menu.file.set_as,
+        hidden: !canSetAlbumCover && !canSetDesktopWallpaper,
+        children: [
+          {
+            label: localeMsg.value.menu.file.set_album_cover,
+            hidden: !canSetAlbumCover,
+            action: createAction('set-album-cover'),
+          },
+          {
+            label: localeMsg.value.menu.file.set_desktop_wallpaper,
+            hidden: !canSetDesktopWallpaper,
+            action: createAction('set-desktop-wallpaper'),
+          },
+        ],
       },
       { label: "-", action: null },
       {

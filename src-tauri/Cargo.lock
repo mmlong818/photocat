@@ -25,6 +25,9 @@ dependencies = [
  "libc",
  "little_exif",
  "ndarray",
+ "objc2",
+ "objc2-app-kit",
+ "objc2-foundation",
  "once_cell",
  "opener",
  "ort",
@@ -54,6 +57,7 @@ dependencies = [
  "trash",
  "uuid",
  "walkdir",
+ "windows 0.61.3",
  "zip 2.4.2",
 ]
 

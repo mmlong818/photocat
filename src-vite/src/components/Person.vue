@@ -208,6 +208,7 @@ import { ref, onMounted, onUnmounted, computed, nextTick, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { config, libConfig } from '@/common/config';
 import { getPersonsPage, renamePerson, deletePerson, indexFaces, cancelFaceIndex, isFaceIndexing, listenFaceIndexProgress, listenFaceIndexFinished, listenClusterProgress, resetFaces, getFaceStats } from '@/common/api';
+import { SIDEBAR } from '@/common/constants';
 import { 
   IconPerson, 
   IconMore, 
@@ -263,6 +264,7 @@ const isPersonSearchFocused = ref(false);
 const PERSON_PAGE_SIZE = 100;
 let personLoadRequest = 0;
 let personSearchTimer: ReturnType<typeof setTimeout> | null = null;
+let isPersonMounted = true;
 
 function handlePersonContextMenu(person: any, event: MouseEvent) {
   selectPerson(person);
@@ -398,16 +400,19 @@ watch(personSearch, () => {
 });
 
 onUnmounted(() => {
+  isPersonMounted = false;
+  personLoadRequest++;
   if (personSearchTimer) clearTimeout(personSearchTimer);
   if (unlistenProgress) unlistenProgress();
   if (unlistenFinished) unlistenFinished();
   if (unlistenCluster) unlistenCluster();
 });
 
-async function loadPersons(reset = true) {
+async function loadPersons(reset = true, validateSelectedPerson = false) {
   if (!reset && (!hasMorePersons.value || isLoadingMorePersons.value || isLoadingPersons.value)) return;
 
   const requestId = reset ? ++personLoadRequest : personLoadRequest;
+  const libraryId = libConfig._libraryId;
   const search = personSearch.value.trim();
   if (reset) {
     isLoadingPersons.value = true;
@@ -418,21 +423,34 @@ async function loadPersons(reset = true) {
   }
 
   try {
-    const page = await getPersonsPage(
-      config.settings.categorySort,
-      reset ? 0 : allPersons.value.length,
-      PERSON_PAGE_SIZE,
+    const page = await getPersonsPage({
+      sort: config.settings.categorySort,
+      offset: reset ? 0 : allPersons.value.length,
+      limit: PERSON_PAGE_SIZE,
       search,
-    );
-    if (requestId !== personLoadRequest) return;
+      smallFileFilter: config.settings.smallFileFilter,
+      refreshSummary: validateSelectedPerson
+        ? { selectedPersonId: libConfig.person?.id ?? null }
+        : null,
+    });
+    if (!isPersonMounted || requestId !== personLoadRequest || libraryId !== libConfig._libraryId) return;
 
     if (page) {
+      const selectedPersonWasFiltered = validateSelectedPerson && page.selected_person_visible === false;
+      if (selectedPersonWasFiltered) {
+        selectedPerson.value = null;
+        if (libConfig.person) {
+          libConfig.person.id = null;
+          libConfig.person.name = null;
+        }
+      }
       allPersons.value = reset
         ? page.persons
         : [...allPersons.value, ...page.persons];
       hasMorePersons.value = page.has_more;
-      if (!search) allPersonCount.value = page.total;
-      if (allPersons.value.length > 0 && !selectedPerson.value) {
+      if (page.visible_total != null) allPersonCount.value = page.visible_total;
+      else if (!search) allPersonCount.value = page.total;
+      if (allPersons.value.length > 0 && !selectedPerson.value && !selectedPersonWasFiltered) {
         const index = allPersons.value.findIndex(p => p.id === libConfig.person?.id);
         selectPerson(allPersons.value[index >= 0 ? index : 0]);
       }
@@ -581,6 +599,21 @@ async function checkFaceStats() {
     incompleteCount.value = stats.unprocessed;
   }
 }
+
+// Only refresh the active view. Inactive panel data is refreshed on re-entry.
+watch(() => config.settings.smallFileFilter, () => {
+  if (libConfig.activePane === 'main' && config.main.sidebarIndex === SIDEBAR.PERSON) {
+    void loadPersons(true, true);
+    void checkFaceStats();
+  }
+});
+
+watch(() => [config.main.sidebarIndex, libConfig.activePane], () => {
+  if (libConfig.activePane === 'main' && config.main.sidebarIndex === SIDEBAR.PERSON) {
+    void loadPersons(true, true);
+    void checkFaceStats();
+  }
+});
 
 async function showBetaTooltip() {
   if (!config.settings.showToolTip || !betaBadgeRef.value) return;

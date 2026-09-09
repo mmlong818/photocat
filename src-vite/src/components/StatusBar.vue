@@ -50,6 +50,10 @@
         </div>
       </template>
     </div>
+    <div v-else-if="emptyMessage" class="flex items-center flex-1 min-w-0 text-base-content/70">
+      <IconList class="t-icon-size-xs mr-1 shrink-0" />
+      <span>{{ emptyMessage }}</span>
+    </div>
     <div
       v-if="showUpdateIcon"
       class="scan-badge absolute right-1 shrink-0 px-1 py-1 flex items-center gap-1 rounded-full bg-base-300 text-primary/70 text-[11px] font-mono"
@@ -138,6 +142,10 @@ const props = defineProps({
     default: 'update',
   },
   scanText: {
+    type: String,
+    default: '',
+  },
+  emptyMessage: {
     type: String,
     default: '',
   },

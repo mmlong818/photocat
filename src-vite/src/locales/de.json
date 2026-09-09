@@ -199,6 +199,23 @@
       }
     }
   },
+  "import_organize": {
+    "source": "Quellordner",
+    "source_placeholder": "Quellordner auswählen",
+    "choose_folder": "Ordner auswählen…",
+    "destination": "Zielordner",
+    "folder_layout": "Ordnerstruktur",
+    "layout_day": "Nach Tag — YYYY/YYYY-MM-DD",
+    "layout_month": "Nach Monat — YYYY/YYYY-MM",
+    "layout_year": "Nach Jahr — YYYY",
+    "layout_none": "Ein Ordner",
+    "import": "Importieren",
+    "preparing": "Import wird vorbereitet",
+    "importing": "Dateien werden importiert",
+    "complete": "Import abgeschlossen",
+    "cancelled": "Import abgebrochen",
+    "failed": "Fehlgeschlagen: {count}"
+  },
   "welcome": {
     "title": "Willkommen bei 猫叔的图",
     "description": "Deine lokale Fotobibliothek. Schnell, durchsuchbar und immer unter deiner Kontrolle.",
@@ -306,10 +323,11 @@
   },
   "calendar": {
     "title": "Kalender",
-    "month_title": "Monatsansicht",
-    "day_title": "Tagesansicht",
-    "switch_to_month": "Zu Monat wechseln",
-    "switch_to_day": "Zu Tag wechseln",
+    "tabs": {
+      "years": "Jahre",
+      "months": "Monate",
+      "days": "Tage"
+    },
     "day": "Tag",
     "week": "Woche",
     "month": "Monat",
@@ -482,6 +500,7 @@
         "building_sets": "Ähnliche Gruppen werden erstellt",
         "analyzing": "Ähnliche Fotos werden analysiert",
         "groups_title": "Ähnliche Gruppen",
+        "results": "Ergebnisse",
         "groups_count": "{count} ähnliche Gruppen",
         "load_more": "Mehr laden",
         "error_title": "Ähnliche Fotos konnten nicht geladen werden",
@@ -503,9 +522,12 @@
       "keep_label": "Behalten",
       "unkeep_label": "Nicht behalten",
       "delete_selected": "Auswahl löschen",
+      "delete_all": "Alle löschen",
       "move_selected_to_trash": "In Papierkorb ({count} ausgewählt · {size})",
+      "no_removable_files": "Keine entfernbaren Dateien zum Verschieben in den Papierkorb",
       "set_keep": "Behalten",
-      "duplicate_files_summary": "{count} Duplikate ({size})"
+      "removable_copies_summary": "{count} entfernbare Kopien · {size}",
+      "similar_photos_summary": "{count} ähnliche Fotos · {size}"
     }
   },
   "tooltip": {
@@ -548,6 +570,14 @@
     "set_album_cover": {
       "success": "Cover gesetzt",
       "failed": "Fehler beim Setzen des Covers"
+    },
+    "set_desktop_wallpaper": {
+      "success": "Desktop-Hintergrund aktualisiert",
+      "failed": "Desktop-Hintergrund konnte nicht festgelegt werden"
+    },
+    "refresh_subfolders": {
+      "success": "Unterordner aktualisiert",
+      "failed": "Unterordner konnten nicht aktualisiert werden"
     },
     "copy_image": {
       "success": "{count} Datei(en) in die Zwischenablage kopiert",
@@ -605,7 +635,7 @@
       "exclude_from_search": "Vom Suchen ausschließen",
       "remove": "Entfernen",
       "delete_folder": "Ordner löschen",
-      "refresh": "Ordner aktualisieren"
+      "refresh_subfolders": "Unterordner aktualisieren"
     },
     "file": {
       "new_folder": "Neuer Ordner",
@@ -636,6 +666,8 @@
       "reveal_in_file_explorer": "Im Explorer anzeigen...",
       "refresh_file_info": "Dateiinformationen aktualisieren",
       "set_album_cover": "Als Albumcover setzen",
+      "set_as": "Festlegen als",
+      "set_desktop_wallpaper": "Als Desktop-Hintergrund festlegen",
       "show_info": "Info anzeigen",
       "remove_from_collection": "Aus Sammlung entfernen"
     },
@@ -647,9 +679,7 @@
     },
     "camera_panel": {
       "camera_title": "Kameras",
-      "lens_title": "Objektive",
-      "switch_to_camera": "Zu Kameras wechseln",
-      "switch_to_lens": "Zu Objektiven wechseln"
+      "lens_title": "Objektive"
     },
     "search": {
       "clear_history": "Suchverlauf löschen"
@@ -811,6 +841,7 @@
       "title": "In Papierkorb verschieben",
       "file_content": "Die Datei '{file}' wird in den Papierkorb verschoben.",
       "files_content": "{count} ausgewählte Dateien werden in den Papierkorb verschoben.",
+      "removable_files_content": "Alle {count} entfernbaren Dateien werden in den Papierkorb verschoben.",
       "raw_jpeg_companions_content": "{count} RAW- und JPEG-Begleitdatei(en) werden ebenfalls gelöscht.",
       "folder_content": "Der Ordner '{folder}' wird in den Papierkorb verschoben.",
       "ok": "In Papierkorb",
@@ -825,6 +856,7 @@
       "title": "Endgültig löschen",
       "file_content": "Die Datei '{file}' wird endgültig gelöscht.",
       "files_content": "{count} ausgewählte Dateien werden endgültig gelöscht.",
+      "removable_files_content": "Alle {count} entfernbaren Dateien werden endgültig gelöscht.",
       "folder_content": "Der Ordner '{folder}' wird endgültig gelöscht.",
       "checkbox": "Endgültig löschen (kann nicht rückgängig gemacht werden)",
       "ok": "Löschen",
@@ -1031,7 +1063,7 @@
     "satellite": "Satellit",
     "heatmap": "Heatmap",
     "photo_count": "{count} Fotos",
-    "no_photos_in_view": "Keine Fotos in diesem Bereich",
+    "no_photos_in_view": "Keine Fotos",
     "photos_in_view": "{count} Fotos in diesem Bereich",
     "photos_in_view_limited": "Zeige die ersten {count} Fotos - zum Eingrenzen weiter zoomen"
   },
@@ -1168,14 +1200,17 @@
       "show_status_bar": "Statusleiste",
       "auto_check_updates": "Automatisch nach Updates suchen"
     },
-    "library": {
-      "title": "Bibliothek",
+    "browse": {
+      "title": "Durchsuchen",
       "section_album": "Album",
       "show_subfolder_files": "Dateien aus Unterordnern anzeigen",
       "show_subfolder_files_hint": "Die Ordneransicht enthält Dateien in Unterordnern",
-      "section_file_grouping": "Dateigruppierung",
+      "section_file_display": "Dateianzeige",
       "group_raw_jpeg_pairs": "RAW-Paare gruppieren",
       "group_raw_jpeg_pairs_hint": "Passende RAW- und JPEG/HEIC-Dateien als ein Element anzeigen",
+      "small_file_filter": "Filter für kleine Dateien",
+      "small_file_filter_hint": "Blendet Dateien aus, wenn Breite und Höhe kleiner als die gewählte Größe sind",
+      "small_file_filter_options": ["Aus", "160 px", "320 px", "640 px"],
       "section_sorting": "Sortierung",
       "folder_sort": "Ordner",
       "folder_sort_hint": "Sortierreihenfolge für unter Alben angezeigte Ordner",
@@ -1204,8 +1239,8 @@
         "Anzahl (Absteigend)"
       ]
     },
-    "browse": {
-      "title": "Durchsuchen",
+    "grid": {
+      "title": "Raster",
       "section_grid": "Raster",
       "section_open": "Öffnen",
       "dbl_click_thumbnail": "Miniaturansicht doppelklicken",
@@ -1416,9 +1451,27 @@
       "title": "Erweitert",
       "section_thumbnail_cache": "Miniaturansichts-Cache",
       "thumbnail_quality": "Miniaturansichtsqualität",
-      "thumbnail_quality_hint": "Legt die Auflösung generierter Miniaturansichten fest. Höhere Einstellungen sehen schärfer aus, benötigen aber mehr Zeit zur Erstellung und mehr Speicherplatz.",
+      "thumbnail_quality_hint": "Legt die Auflösung generierter Miniaturansichten fest. Höhere Einstellungen sehen schärfer aus, benötigen aber mehr Zeit zur Erstellung und mehr Speicherplatz",
+      "raw_thumbnail_source": "RAW-Miniaturansichtsquelle",
+      "raw_thumbnail_source_hint": "Wählen Sie, wie Miniaturansichten für RAW-Dateien erstellt werden",
+      "raw_thumbnail_source_options": [
+        "RAW-Rendering (Standard)",
+        "Eingebettete Vorschau (schneller)"
+      ],
+      "section_map": "Karte",
+      "map_provider": "Kartendienst",
+      "map_provider_hint": "Wählt den Kartendienst für die Kartenansicht",
+      "map_provider_options": [
+        "Global (Standard)",
+        "China (Tianditu)"
+      ],
+      "tianditu_token": "Tianditu-API-Token",
+      "tianditu_token_hint": "Für Tianditu-Kacheln erforderlich",
+      "tianditu_token_placeholder": "Token einfügen",
+      "tianditu_token_status_saved": "Gespeichert",
+      "tianditu_token_status_empty": "Nicht konfiguriert",
       "clean_unused_thumbnails": "Nicht verwendeten Miniaturansichts-Cache bereinigen",
-      "clean_unused_thumbnails_hint": "Entfernt zwischengespeicherte Miniaturansichten, die keiner Datei in dieser Bibliothek mehr zugeordnet sind.",
+      "clean_unused_thumbnails_hint": "Entfernt zwischengespeicherte Miniaturansichten, die keiner Datei in dieser Bibliothek mehr zugeordnet sind",
       "clean": "Bereinigen",
       "thumbnail_cache_cleaned": "{count} Miniaturansichten bereinigt, {size} freigegeben.",
       "thumbnail_quality_options": [

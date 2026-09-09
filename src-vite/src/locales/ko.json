@@ -199,6 +199,23 @@
       }
     }
   },
+  "import_organize": {
+    "source": "원본 폴더",
+    "source_placeholder": "원본 폴더 선택",
+    "choose_folder": "폴더 선택…",
+    "destination": "대상 폴더",
+    "folder_layout": "폴더 구조",
+    "layout_day": "일별 — YYYY/YYYY-MM-DD",
+    "layout_month": "월별 — YYYY/YYYY-MM",
+    "layout_year": "연도별 — YYYY",
+    "layout_none": "단일 폴더",
+    "import": "가져오기",
+    "preparing": "가져오기 준비 중",
+    "importing": "파일 가져오는 중",
+    "complete": "가져오기 완료",
+    "cancelled": "가져오기가 취소됨",
+    "failed": "실패: {count}"
+  },
   "welcome": {
     "title": "猫叔的图에 오신 것을 환영합니다",
     "description": "당신의 로컬 사진 라이브러리. 빠르고 검색 가능하며 항상 당신의 통제 아래에 있습니다.",
@@ -306,10 +323,11 @@
   },
   "calendar": {
     "title": "달력",
-    "month_title": "월별 보기",
-    "day_title": "일별 보기",
-    "switch_to_month": "월로 전환",
-    "switch_to_day": "일로 전환",
+    "tabs": {
+      "years": "년",
+      "months": "월",
+      "days": "일"
+    },
     "day": "일",
     "week": "주",
     "month": "월",
@@ -482,6 +500,7 @@
         "building_sets": "유사 그룹 생성 중",
         "analyzing": "유사 사진 분석 중",
         "groups_title": "유사 그룹",
+        "results": "결과",
         "groups_count": "유사 그룹 {count}개",
         "load_more": "더 보기",
         "error_title": "유사 사진을 불러올 수 없습니다",
@@ -503,9 +522,12 @@
       "keep_label": "유지",
       "unkeep_label": "유지 안 함",
       "delete_selected": "선택 항목 삭제",
+      "delete_all": "모두 삭제",
       "move_selected_to_trash": "휴지통으로 이동 ({count}개 선택 · {size})",
+      "no_removable_files": "휴지통으로 이동할 삭제 가능한 파일이 없습니다",
       "set_keep": "유지",
-      "duplicate_files_summary": "중복 {count}개 ({size})"
+      "removable_copies_summary": "삭제 가능한 사본 {count}개 · {size}",
+      "similar_photos_summary": "유사 사진 {count}장 · {size}"
     }
   },
   "tooltip": {
@@ -548,6 +570,14 @@
     "set_album_cover": {
       "success": "앨범 커버 설정 완료",
       "failed": "앨범 커버 설정 실패"
+    },
+    "set_desktop_wallpaper": {
+      "success": "바탕 화면 배경이 업데이트되었습니다",
+      "failed": "바탕 화면 배경을 설정하지 못했습니다"
+    },
+    "refresh_subfolders": {
+      "success": "하위 폴더를 새로 고쳤습니다",
+      "failed": "하위 폴더를 새로 고치지 못했습니다"
     },
     "copy_image": {
       "success": "{count}개 파일을 클립보드에 복사했습니다",
@@ -605,7 +635,7 @@
       "exclude_from_search": "검색에서 제외",
       "remove": "제거",
       "delete_folder": "폴더 삭제",
-      "refresh": "폴더 새로고침"
+      "refresh_subfolders": "하위 폴더 새로고침"
     },
     "file": {
       "new_folder": "새 폴더",
@@ -636,6 +666,8 @@
       "reveal_in_file_explorer": "탐색기에서 보기...",
       "refresh_file_info": "파일 정보 새로 고침",
       "set_album_cover": "앨범 커버로 설정",
+      "set_as": "다음으로 설정",
+      "set_desktop_wallpaper": "바탕 화면 배경으로 설정",
       "show_info": "정보 보기",
       "remove_from_collection": "컬렉션에서 제거"
     },
@@ -647,9 +679,7 @@
     },
     "camera_panel": {
       "camera_title": "카메라",
-      "lens_title": "렌즈",
-      "switch_to_camera": "카메라로 전환",
-      "switch_to_lens": "렌즈로 전환"
+      "lens_title": "렌즈"
     },
     "search": {
       "clear_history": "검색 기록 지우기"
@@ -811,6 +841,7 @@
       "title": "휴지통으로 이동",
       "file_content": "'{file}'을(를) 휴지통으로 이동합니다.",
       "files_content": "{count}개의 파일을 휴지통으로 이동합니다.",
+      "removable_files_content": "삭제 가능한 {count}개의 모든 파일을 휴지통으로 이동합니다.",
       "raw_jpeg_companions_content": "RAW+JPEG 연결 파일 {count}개도 함께 삭제됩니다.",
       "folder_content": "'{folder}'을(를) 휴지통으로 이동합니다.",
       "ok": "이동",
@@ -825,6 +856,7 @@
       "title": "영구 삭제",
       "file_content": "'{file}' 파일을 영구 삭제합니다.",
       "files_content": "선택한 {count}개 파일을 영구 삭제합니다.",
+      "removable_files_content": "삭제 가능한 {count}개의 모든 파일을 영구 삭제합니다.",
       "folder_content": "'{folder}' 폴더를 영구 삭제합니다.",
       "checkbox": "영구 삭제(되돌릴 수 없음)",
       "ok": "삭제",
@@ -1031,7 +1063,7 @@
     "satellite": "위성",
     "heatmap": "히트맵",
     "photo_count": "사진 {count}장",
-    "no_photos_in_view": "이 영역에 사진이 없습니다",
+    "no_photos_in_view": "사진이 없습니다",
     "photos_in_view": "이 영역에 사진 {count}장",
     "photos_in_view_limited": "처음 {count}장 표시 중 - 더 보려면 확대하세요"
   },
@@ -1168,14 +1200,17 @@
       "show_status_bar": "상태 표시줄",
       "auto_check_updates": "업데이트 자동 확인"
     },
-    "library": {
-      "title": "라이브러리",
+    "browse": {
+      "title": "탐색",
       "section_album": "앨범",
       "show_subfolder_files": "하위 폴더의 파일 표시",
       "show_subfolder_files_hint": "폴더 보기에서 하위 폴더의 파일을 포함합니다",
-      "section_file_grouping": "파일 그룹화",
+      "section_file_display": "파일 표시",
       "group_raw_jpeg_pairs": "RAW 쌍을 하나로 표시",
       "group_raw_jpeg_pairs_hint": "일치하는 RAW 및 JPEG/HEIC 파일을 하나의 항목으로 표시합니다",
+      "small_file_filter": "작은 파일 필터",
+      "small_file_filter_hint": "너비와 높이가 모두 선택한 크기보다 작은 파일을 숨깁니다",
+      "small_file_filter_options": ["끔", "160 px", "320 px", "640 px"],
       "section_sorting": "정렬",
       "folder_sort": "폴더",
       "folder_sort_hint": "앨범 아래에 표시되는 폴더의 정렬 순서입니다",
@@ -1204,8 +1239,8 @@
         "개수 (높은 순)"
       ]
     },
-    "browse": {
-      "title": "탐색",
+    "grid": {
+      "title": "그리드",
       "section_grid": "그리드",
       "section_open": "열기",
       "dbl_click_thumbnail": "썸네일 두 번 클릭",
@@ -1416,9 +1451,27 @@
       "title": "고급",
       "section_thumbnail_cache": "썸네일 캐시",
       "thumbnail_quality": "썸네일 품질",
-      "thumbnail_quality_hint": "생성된 썸네일의 해상도를 설정합니다. 높은 설정일수록 더 선명하지만 생성 시간이 길고 디스크 공간을 더 사용합니다.",
+      "thumbnail_quality_hint": "생성된 썸네일의 해상도를 설정합니다. 높은 설정일수록 더 선명하지만 생성 시간이 길고 디스크 공간을 더 사용합니다",
+      "raw_thumbnail_source": "RAW 썸네일 소스",
+      "raw_thumbnail_source_hint": "RAW 파일의 썸네일 생성 방식을 선택합니다",
+      "raw_thumbnail_source_options": [
+        "RAW 렌더링(기본값)",
+        "내장 미리보기(더 빠름)"
+      ],
+      "section_map": "지도",
+      "map_provider": "지도 서비스",
+      "map_provider_hint": "지도 보기에 사용할 지도 서비스를 선택합니다",
+      "map_provider_options": [
+        "글로벌(기본값)",
+        "중국(톈디투)"
+      ],
+      "tianditu_token": "톈디투 API 토큰",
+      "tianditu_token_hint": "톈디투 타일에 필요합니다",
+      "tianditu_token_placeholder": "토큰 붙여넣기",
+      "tianditu_token_status_saved": "저장됨",
+      "tianditu_token_status_empty": "설정되지 않음",
       "clean_unused_thumbnails": "사용하지 않는 썸네일 캐시 정리",
-      "clean_unused_thumbnails_hint": "이 라이브러리의 파일과 더 이상 연결되지 않은 캐시된 썸네일을 제거합니다.",
+      "clean_unused_thumbnails_hint": "이 라이브러리의 파일과 더 이상 연결되지 않은 캐시된 썸네일을 제거합니다",
       "clean": "정리",
       "thumbnail_cache_cleaned": "{count}개의 썸네일을 정리하여 {size}을(를) 확보했습니다.",
       "thumbnail_quality_options": [

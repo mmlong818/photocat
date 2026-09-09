@@ -1,12 +1,15 @@
 #!/usr/bin/env bash
 # Post-process AppImages after Tauri/linuxdeploy builds them.
 #
-# 1. Remove the bundled libwayland-client.so.0 so the host's ABI-compatible copy
-#    is resolved instead (required for EGL/Mesa on pure-Wayland systems).
+# 1. Remove the bundled Wayland libraries so the host's ABI-compatible copies
+#    are resolved instead (required for EGL/Mesa on pure-Wayland systems).
 # 2. Disable AppImageKit's GStreamer plugin-path override, since the AppImage
 #    does not bundle GStreamer plugins (fixes "GStreamer element appsink not
 #    found").
-# 3. Optionally embed update information and generate a .zsync delta file.
+# 3. Remove bundled host-runtime libraries that linuxdeploy follows through
+#    WebKitGTK (GStreamer, GLib, and their transitive dependencies). This
+#    keeps GTK, WebKitGTK, GStreamer, and GLib on a consistent host ABI.
+# 4. Optionally embed update information and generate a .zsync delta file.
 #
 # Usage:
 #   remove_appimage_wayland_client.sh <appimage-directory>
@@ -120,6 +123,48 @@ for appimage in "${APPIMAGES[@]}"; do
     # Upstream (Tauri/linuxdeploy) may stop hardcoding this variable in a future
     # version; treat its absence as a no-op rather than failing the build.
     echo "GStreamer plugin path override not found in ${image_name}; nothing to do" >&2
+  fi
+
+  # linuxdeploy follows WebKitGTK's ELF dependencies and copies GStreamer, GLib,
+  # and their transitive support libraries. It does not discover GStreamer's
+  # runtime-loaded plugins or scanner, so a bundled core and host plugins can
+  # have incompatible ABIs. A bundled older library can likewise be
+  # incompatible with whatever newer host library ends up loading it: the host
+  # libgio needs a libmount exporting MOUNT_2_40, the host libglib needs a
+  # versioned libpcre2-8, and so on. Remove these partial stacks so GTK,
+  # WebKitGTK, GStreamer, and GLib all resolve their common runtime libraries
+  # from the host (full set validated in tauri-apps/tauri#15665).
+  host_runtime_lib_patterns=(
+    'libwayland-cursor.so*'
+    'libwayland-egl.so*'
+    'libwayland-server.so*'
+    'libgst*.so*'
+    'libgstreamer-*.so*'
+    'liborc-*.so*'
+    'libglib-2.0.so*'
+    'libgobject-2.0.so*'
+    'libgio-2.0.so*'
+    'libgmodule-2.0.so*'
+    'libgthread-2.0.so*'
+    'libffi.so*'
+    'libmount.so*'
+    'libblkid.so*'
+    'libselinux.so*'
+    'libpcre2-8.so*'
+    'libzstd.so*'
+    'libelf.so*'
+  )
+  host_runtime_libs=()
+  for host_runtime_lib_pattern in "${host_runtime_lib_patterns[@]}"; do
+    while IFS= read -r -d '' host_runtime_lib; do
+      host_runtime_libs+=("$host_runtime_lib")
+    done < <(find "$image_work_dir/squashfs-root/usr/lib" -maxdepth 1 -type f -name "$host_runtime_lib_pattern" -print0)
+  done
+  if [ "${#host_runtime_libs[@]}" -gt 0 ]; then
+    echo "==> Removing partial bundled host runtime libraries from ${image_name}"
+    rm -f "${host_runtime_libs[@]}"
+  else
+    echo "No bundled host runtime libraries found in ${image_name}; nothing to do" >&2
   fi
 
   repack_args=(--no-appstream)

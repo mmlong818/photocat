@@ -441,7 +441,9 @@ function clickOk() {
     group: { type: groupType.value },
     sort: { type: sortType.value, order: sortOrder.value },
     coverFileId: props.smartAlbum?.coverFileId || null,
-    count: props.smartAlbum?.count ?? null,
+    // Editing rules changes the result set, so its lazily populated count
+    // must be requested again rather than carried over from the old query.
+    count: null,
     createdAt: props.smartAlbum?.createdAt || now,
     updatedAt: now,
   });

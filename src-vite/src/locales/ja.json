@@ -199,6 +199,23 @@
       }
     }
   },
+  "import_organize": {
+    "source": "読み込み元フォルダー",
+    "source_placeholder": "読み込み元フォルダーを選択",
+    "choose_folder": "フォルダーを選択…",
+    "destination": "保存先フォルダー",
+    "folder_layout": "フォルダー構成",
+    "layout_day": "日別 — YYYY/YYYY-MM-DD",
+    "layout_month": "月別 — YYYY/YYYY-MM",
+    "layout_year": "年別 — YYYY",
+    "layout_none": "単一フォルダー",
+    "import": "読み込む",
+    "preparing": "読み込みを準備中",
+    "importing": "ファイルを読み込み中",
+    "complete": "読み込み完了",
+    "cancelled": "読み込みをキャンセルしました",
+    "failed": "失敗: {count}"
+  },
   "welcome": {
     "title": "猫叔的图 へようこそ",
     "description": "あなたのローカルフォトライブラリ。高速で検索可能、常にあなたの管理下に。",
@@ -306,10 +323,11 @@
   },
   "calendar": {
     "title": "カレンダー",
-    "month_title": "月表示",
-    "day_title": "日表示",
-    "switch_to_month": "月表示に切替",
-    "switch_to_day": "日表示に切替",
+    "tabs": {
+      "years": "年",
+      "months": "月",
+      "days": "日"
+    },
     "day": "日",
     "week": "週",
     "month": "月",
@@ -482,6 +500,7 @@
         "building_sets": "類似グループを作成中",
         "analyzing": "類似写真を分析中",
         "groups_title": "類似グループ",
+        "results": "結果",
         "groups_count": "類似グループ {count} 件",
         "load_more": "さらに読み込む",
         "error_title": "類似写真を読み込めません",
@@ -503,9 +522,12 @@
       "keep_label": "保持",
       "unkeep_label": "保持しない",
       "delete_selected": "選択項目を削除",
+      "delete_all": "すべて削除",
       "move_selected_to_trash": "ゴミ箱に入れる（{count}件を選択 · {size}）",
+      "no_removable_files": "ゴミ箱に移動できる削除可能なファイルはありません",
       "set_keep": "保持",
-      "duplicate_files_summary": "重複 {count} 件（{size}）"
+      "removable_copies_summary": "削除可能なコピー {count} 件・{size}",
+      "similar_photos_summary": "{count} 枚の類似写真・{size}"
     }
   },
   "tooltip": {
@@ -548,6 +570,14 @@
     "set_album_cover": {
       "success": "アルバムの表紙を設定しました",
       "failed": "表紙の設定に失敗しました"
+    },
+    "set_desktop_wallpaper": {
+      "success": "デスクトップの壁紙を更新しました",
+      "failed": "デスクトップの壁紙を設定できませんでした"
+    },
+    "refresh_subfolders": {
+      "success": "サブフォルダーを更新しました",
+      "failed": "サブフォルダーを更新できませんでした"
     },
     "copy_image": {
       "success": "{count} 件のファイルをクリップボードにコピーしました",
@@ -605,7 +635,7 @@
       "exclude_from_search": "検索から除外",
       "remove": "削除",
       "delete_folder": "フォルダーを削除",
-      "refresh": "フォルダーを更新"
+      "refresh_subfolders": "サブフォルダーを更新"
     },
     "file": {
       "new_folder": "新しいフォルダー",
@@ -636,6 +666,8 @@
       "reveal_in_file_explorer": "エクスプローラーで表示...",
       "refresh_file_info": "ファイル情報を更新",
       "set_album_cover": "アルバムの表紙に設定",
+      "set_as": "設定",
+      "set_desktop_wallpaper": "デスクトップの壁紙に設定",
       "show_info": "情報を表示",
       "remove_from_collection": "コレクションから削除"
     },
@@ -647,9 +679,7 @@
     },
     "camera_panel": {
       "camera_title": "カメラ",
-      "lens_title": "レンズ",
-      "switch_to_camera": "カメラに切替",
-      "switch_to_lens": "レンズに切替"
+      "lens_title": "レンズ"
     },
     "search": {
       "clear_history": "検索履歴を消去"
@@ -811,6 +841,7 @@
       "title": "ゴミ箱に入れる",
       "file_content": "ファイル '{file}' をゴミ箱に入れます。",
       "files_content": "{count} 個のファイルをゴミ箱に入れます。",
+      "removable_files_content": "削除可能な {count} 件すべてのファイルをゴミ箱に入れます。",
       "raw_jpeg_companions_content": "RAW+JPEG の関連ファイルも {count} 件削除されます。",
       "folder_content": "フォルダ '{folder}' をゴミ箱に入れます。",
       "ok": "入れる",
@@ -825,6 +856,7 @@
       "title": "完全に削除",
       "file_content": "ファイル '{file}' を完全に削除します。",
       "files_content": "選択した {count} 個のファイルを完全に削除します。",
+      "removable_files_content": "削除可能な {count} 件すべてのファイルを完全に削除します。",
       "folder_content": "フォルダ '{folder}' を完全に削除します。",
       "checkbox": "完全に削除する（元に戻せません）",
       "ok": "削除",
@@ -1031,7 +1063,7 @@
     "satellite": "衛星",
     "heatmap": "ヒートマップ",
     "photo_count": "{count} 枚の写真",
-    "no_photos_in_view": "この範囲に写真はありません",
+    "no_photos_in_view": "写真はありません",
     "photos_in_view": "この範囲に {count} 枚の写真",
     "photos_in_view_limited": "最初の {count} 枚を表示中 - さらに拡大すると絞り込めます"
   },
@@ -1168,14 +1200,17 @@
       "show_status_bar": "ステータスバー",
       "auto_check_updates": "更新を自動確認"
     },
-    "library": {
-      "title": "ライブラリ",
+    "browse": {
+      "title": "ブラウズ",
       "section_album": "アルバム",
       "show_subfolder_files": "サブフォルダー内のファイルを表示",
       "show_subfolder_files_hint": "フォルダービューに子フォルダー内のファイルを含めます",
-      "section_file_grouping": "ファイルのグループ化",
+      "section_file_display": "ファイル表示",
       "group_raw_jpeg_pairs": "RAWペアをまとめて表示",
       "group_raw_jpeg_pairs_hint": "一致する RAW と JPEG/HEIC ファイルを 1 つの項目として表示します",
+      "small_file_filter": "小さいファイルのフィルター",
+      "small_file_filter_hint": "幅と高さの両方が選択したサイズ未満のファイルを非表示にします",
+      "small_file_filter_options": ["オフ", "160 px", "320 px", "640 px"],
       "section_sorting": "並べ替え",
       "folder_sort": "フォルダ",
       "folder_sort_hint": "アルバム配下に表示されるフォルダの並び順です",
@@ -1204,8 +1239,8 @@
         "件数 (多い順)"
       ]
     },
-    "browse": {
-      "title": "ブラウズ",
+    "grid": {
+      "title": "グリッド",
       "section_grid": "グリッド",
       "section_open": "開く",
       "dbl_click_thumbnail": "サムネイルをダブルクリック",
@@ -1416,9 +1451,27 @@
       "title": "詳細",
       "section_thumbnail_cache": "サムネイルキャッシュ",
       "thumbnail_quality": "サムネイル品質",
-      "thumbnail_quality_hint": "生成されるサムネイルの解像度を設定します。高い設定ほど鮮明になりますが、生成に時間がかかりディスク容量を多く使用します。",
+      "thumbnail_quality_hint": "生成されるサムネイルの解像度を設定します。高い設定ほど鮮明になりますが、生成に時間がかかりディスク容量を多く使用します",
+      "raw_thumbnail_source": "RAWサムネイルのソース",
+      "raw_thumbnail_source_hint": "RAW ファイルのサムネイル生成方法を選択します",
+      "raw_thumbnail_source_options": [
+        "RAW レンダリング（デフォルト）",
+        "埋め込みプレビュー（高速）"
+      ],
+      "section_map": "地図",
+      "map_provider": "地図サービス",
+      "map_provider_hint": "地図ビューで使用する地図サービスを選択します",
+      "map_provider_options": [
+        "グローバル（デフォルト）",
+        "中国（天地图）"
+      ],
+      "tianditu_token": "天地图 API トークン",
+      "tianditu_token_hint": "天地图のタイルに必要です",
+      "tianditu_token_placeholder": "トークンを貼り付け",
+      "tianditu_token_status_saved": "保存済み",
+      "tianditu_token_status_empty": "未設定",
       "clean_unused_thumbnails": "未使用のサムネイルキャッシュを削除",
-      "clean_unused_thumbnails_hint": "このライブラリのファイルに関連付けられていないキャッシュ済みサムネイルを削除します。",
+      "clean_unused_thumbnails_hint": "このライブラリのファイルに関連付けられていないキャッシュ済みサムネイルを削除します",
       "clean": "削除",
       "thumbnail_cache_cleaned": "{count} 個のサムネイルを削除し、{size} を解放しました。",
       "thumbnail_quality_options": [

@@ -1,6 +1,6 @@
 <template>
   <div
-    class="group/map relative w-full h-full min-h-[300px] border border-base-content/30 rounded-box overflow-hidden"
+    class="file-info-map-view group/map relative w-full h-full min-h-[300px] border border-base-content/30 rounded-box overflow-hidden"
     @mouseenter="uiStore.setMapActive(true)"
     @mouseleave="uiStore.setMapActive(false)"
   >
@@ -15,7 +15,7 @@
       <TButton
         :icon="IconZoomIn"
         :tooltip="t('map.zoom_in')"
-        :disabled="zoom >= 18"
+        :disabled="zoom >= activeMaxZoom"
         @click="zoomIn"
       />
       <TButton
@@ -43,6 +43,7 @@ import { computed, onMounted, onBeforeUnmount, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { config } from '@/common/config'
 import { openExternalUrl } from '@/common/api'
+import { createTileLayerGroup, getGlobalMapTheme, getMapTheme } from '@/common/mapProviders'
 import { isMac } from '@/common/utils'
 import { useUIStore } from '@/stores/uiStore'
 
@@ -82,25 +83,13 @@ const props = defineProps({
 const { t } = useI18n()
 const uiStore = useUIStore()
 
-const mapTheme = [
-  {
-    name: 'standard',
-    url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
-    attribution: 'OpenStreetMap', // https://osmfoundation.org/wiki/Licence/Attribution_Guidelines
-  },
-  {
-    name: 'satellite',
-    url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}',
-    attribution: 'Powered by Esri',
-  },
-]
-
 const mapEl = ref(null)
 let marker = null
 let map = null
 let layer = null
 let tileErrorFallbackTriggered = false
 let zoom = ref(props.zoom)
+let activeMaxZoom = ref(19)
 let resizeObserver = null
 const showAppleMapsButton = computed(() => isMac && validLatLon(props.lat, props.lon))
 
@@ -150,6 +139,7 @@ onBeforeUnmount(() => {
 watch(() => [props.lat, props.lon, props.zoom], () => {
   updateFromProps()
 })
+watch(() => [config.infoPanel.mapTheme, config.settings.mapProvider, config.settings.tiandituToken], updateTheme)
 
 function updateFromProps() {
   if (!map) return
@@ -177,7 +167,7 @@ function validLatLon(lat, lon) {
 
 function zoomIn() {
   if (map) { 
-    if (zoom.value < 18) {
+    if (zoom.value < activeMaxZoom.value) {
       map.setZoom(zoom.value + 1)
     }
   }
@@ -202,25 +192,31 @@ function toggleMap() {
 }
 
 function updateTheme() {
-  const theme = mapTheme[Number(config.infoPanel.mapTheme)] || mapTheme[0]
-  if (map) {
-    if (layer) {
-      map.removeLayer(layer)
-      layer = null
-    }
-    tileErrorFallbackTriggered = false
-    layer = L.tileLayer(theme.url, { attribution: theme.attribution }).addTo(map)
-    layer.on('tileerror', () => {
-      if (tileErrorFallbackTriggered) return
-      tileErrorFallbackTriggered = true
+  const theme = getMapTheme(config.settings.mapProvider, config.settings.tiandituToken, config.infoPanel.mapTheme)
+  applyTheme(theme, false)
+}
 
-      // If satellite tiles fail (TLS/network/provider), fall back to standard tiles.
-      if (Number(config.infoPanel.mapTheme) !== 0) {
-        config.infoPanel.mapTheme = 0
-        updateTheme()
-      }
+function applyTheme(theme, isFallback) {
+  if (!map) return
+  if (layer) map.removeLayer(layer)
+
+  activeMaxZoom.value = theme.maxZoom
+  map.setMaxZoom(theme.maxZoom)
+  if (map.getZoom() > theme.maxZoom) map.setZoom(theme.maxZoom)
+  if (!isFallback) tileErrorFallbackTriggered = false
+
+  const created = createTileLayerGroup(L, theme)
+  const activeLayer = created.layer
+  layer = activeLayer.addTo(map)
+  created.tileLayers.forEach(tileLayer => {
+    tileLayer.on('tileerror', () => {
+      // Requests from a removed layer can still fail after a provider switch.
+      // Ignore them so an old OSM request cannot replace the new provider.
+      if (layer !== activeLayer || tileErrorFallbackTriggered || isFallback) return
+      tileErrorFallbackTriggered = true
+      applyTheme(getGlobalMapTheme(config.infoPanel.mapTheme), true)
     })
-  }
+  })
 }
 
 async function openAppleMaps() {

@@ -813,6 +813,11 @@ pub fn run_face_indexing(
                 }
                 Err(e) => {
                     eprintln!("Failed to process image {}: {}", file_path, e);
+                    // Do not retry files the decoder cannot read on every resume.
+                    // Status 2 means the image was processed without a face result.
+                    if let Err(mark_error) = t_sqlite::Face::mark_scanned_with_conn(&db_conn, file_id, 2) {
+                        eprintln!("Failed to mark unreadable file {} as skipped: {}", file_id, mark_error);
+                    }
                 }
             }
 

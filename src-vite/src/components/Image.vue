@@ -536,7 +536,13 @@ function loadImageResource(filePath?: string) {
     };
 
     if (shouldUseBackendPreview(filePath, Number(props.fileType || 0))) {
-      src = getPreviewUrl(props.fileId, filePath, false, props.fileVersion);
+      src = getPreviewUrl(
+        props.fileId,
+        filePath,
+        false,
+        props.fileVersion,
+        config.settings.rawThumbnailSource,
+      );
       if (!src) {
         preloadCache.delete(filePath);
         reject(new Error(`Failed to resolve RAW/TIFF preview source: ${filePath}`));
@@ -1210,13 +1216,21 @@ const updatePosition = () => {
   }
 };
 
-// watch filePath changes
-watch([() => props.filePath, () => props.fileVersion], async ([newFilePath, newFileVersion], [oldFilePath, oldFileVersion]) => {
+// Watch file changes and the selected RAW preview source.
+watch([
+  () => props.filePath,
+  () => props.fileVersion,
+  () => Number(props.fileType || 0) === 3 ? config.settings.rawThumbnailSource : '',
+], async ([newFilePath, newFileVersion, newRawThumbnailSource], [oldFilePath, oldFileVersion, oldRawThumbnailSource]) => {
   // Cancel previous loading
   currentLoadingId.value++;
   const loadingId = currentLoadingId.value;
   cancelWarmImageScheduling();
-  if (newFilePath && newFilePath === oldFilePath && newFileVersion !== oldFileVersion) {
+  if (
+    newFilePath
+    && newFilePath === oldFilePath
+    && (newFileVersion !== oldFileVersion || newRawThumbnailSource !== oldRawThumbnailSource)
+  ) {
     preloadCache.delete(newFilePath);
   }
   clearStalePreloadEntries(newFilePath || '', props.nextFilePath || '');
@@ -1381,7 +1395,13 @@ watch(displayThumbnailSrc, async (newThumbSrc) => {
   
   // We check if it's the full original image by checking the src. 
   // For backend preview, the full image src is from getPreviewUrl.
-  const isCurrentlyShowingFullImage = imageSrc.value[activeIndex] === getPreviewUrl(props.fileId, currentFilePath, false, props.fileVersion);
+  const isCurrentlyShowingFullImage = imageSrc.value[activeIndex] === getPreviewUrl(
+    props.fileId,
+    currentFilePath,
+    false,
+    props.fileVersion,
+    config.settings.rawThumbnailSource,
+  );
   
   if (isCurrentlyShowingFullImage) return;
 

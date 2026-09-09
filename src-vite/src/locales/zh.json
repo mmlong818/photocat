@@ -199,6 +199,23 @@
       }
     }
   },
+  "import_organize": {
+    "source": "来源文件夹",
+    "source_placeholder": "选择来源文件夹",
+    "choose_folder": "选择文件夹…",
+    "destination": "目标文件夹",
+    "folder_layout": "文件夹结构",
+    "layout_day": "按天 — YYYY/YYYY-MM-DD",
+    "layout_month": "按月 — YYYY/YYYY-MM",
+    "layout_year": "按年 — YYYY",
+    "layout_none": "单个文件夹",
+    "import": "导入",
+    "preparing": "正在准备导入",
+    "importing": "正在导入文件",
+    "complete": "导入完成",
+    "cancelled": "已取消导入",
+    "failed": "失败：{count}"
+  },
   "welcome": {
     "title": "欢迎使用 猫叔的图",
     "description": "您的本地照片库。快速、可搜索，始终由您掌控。",
@@ -306,10 +323,11 @@
   },
   "calendar": {
     "title": "日历",
-    "month_title": "月视图",
-    "day_title": "日视图",
-    "switch_to_month": "切换到月视图",
-    "switch_to_day": "切换到日视图",
+    "tabs": {
+      "years": "年",
+      "months": "月",
+      "days": "日"
+    },
     "day": "日",
     "week": "周",
     "month": "月",
@@ -482,6 +500,7 @@
         "building_sets": "建立相似组",
         "analyzing": "分析相似照片",
         "groups_title": "相似组",
+        "results": "结果",
         "groups_count": "{count} 个相似组",
         "load_more": "加载更多",
         "error_title": "无法加载相似照片",
@@ -503,9 +522,12 @@
       "keep_label": "保留",
       "unkeep_label": "取消保留",
       "delete_selected": "删除所选项",
+      "delete_all": "删除全部",
       "move_selected_to_trash": "移到废纸篓（已选 {count} 项 · {size}）",
+      "no_removable_files": "没有可移至废纸篓的可删除文件",
       "set_keep": "保留",
-      "duplicate_files_summary": "{count} 个重复项（{size}）"
+      "removable_copies_summary": "{count} 个可删除副本 · {size}",
+      "similar_photos_summary": "{count} 张相似照片 · {size}"
     }
   },
   "tooltip": {
@@ -548,6 +570,14 @@
     "set_album_cover": {
       "success": "相册封面设置成功",
       "failed": "无法设置相册封面"
+    },
+    "set_desktop_wallpaper": {
+      "success": "桌面壁纸已更新",
+      "failed": "无法设置桌面壁纸"
+    },
+    "refresh_subfolders": {
+      "success": "已刷新子文件夹",
+      "failed": "无法刷新子文件夹"
     },
     "copy_image": {
       "success": "已复制 {count} 个文件到剪贴板",
@@ -605,7 +635,7 @@
       "exclude_from_search": "从搜索中排除",
       "remove": "移除",
       "delete_folder": "删除文件夹",
-      "refresh": "刷新文件夹"
+      "refresh_subfolders": "刷新子文件夹"
     },
     "file": {
       "new_folder": "新建文件夹",
@@ -636,6 +666,8 @@
       "reveal_in_file_explorer": "在文件资源管理器中显示...",
       "refresh_file_info": "刷新文件信息",
       "set_album_cover": "设置为相册封面",
+      "set_as": "设为",
+      "set_desktop_wallpaper": "设为桌面壁纸",
       "show_info": "显示信息",
       "remove_from_collection": "从合集移除"
     },
@@ -647,9 +679,7 @@
     },
     "camera_panel": {
       "camera_title": "相机",
-      "lens_title": "镜头",
-      "switch_to_camera": "切换到相机",
-      "switch_to_lens": "切换到镜头"
+      "lens_title": "镜头"
     },
     "search": {
       "clear_history": "清空搜索历史"
@@ -811,6 +841,7 @@
       "title": "移到废纸篓",
       "file_content": "文件 '{file}' 将被移到废纸篓。",
       "files_content": "{count} 个选择的文件将被移到废纸篓。",
+      "removable_files_content": "全部 {count} 个可删除文件将被移到废纸篓。",
       "raw_jpeg_companions_content": "还将删除 {count} 个 RAW+JPEG 配对文件。",
       "folder_content": "文件夹 '{folder}' 将被移到废纸篓。",
       "ok": "移到废纸篓",
@@ -825,6 +856,7 @@
       "title": "永久删除",
       "file_content": "文件 '{file}' 将被永久删除。",
       "files_content": "{count} 个选择的文件将被永久删除。",
+      "removable_files_content": "全部 {count} 个可删除文件将被永久删除。",
       "folder_content": "文件夹 '{folder}' 将被永久删除。",
       "checkbox": "永久删除（无法撤销）",
       "ok": "删除",
@@ -1031,7 +1063,7 @@
     "satellite": "卫星",
     "heatmap": "热力图",
     "photo_count": "{count} 张照片",
-    "no_photos_in_view": "此区域内没有照片",
+    "no_photos_in_view": "没有照片",
     "photos_in_view": "此区域内有 {count} 张照片",
     "photos_in_view_limited": "显示前 {count} 张照片 - 放大以查看更多"
   },
@@ -1168,14 +1200,17 @@
       "show_status_bar": "显示状态栏",
       "auto_check_updates": "自动检查更新"
     },
-    "library": {
-      "title": "资料库",
+    "browse": {
+      "title": "浏览",
       "section_album": "相册",
       "show_subfolder_files": "显示子文件夹中的文件",
       "show_subfolder_files_hint": "文件夹视图包含子文件夹内的文件",
-      "section_file_grouping": "文件分组",
+      "section_file_display": "文件显示",
       "group_raw_jpeg_pairs": "合并显示 RAW 配对",
       "group_raw_jpeg_pairs_hint": "将同名的 RAW 与 JPEG/HEIC 文件合并显示为一个条目",
+      "small_file_filter": "小文件过滤",
+      "small_file_filter_hint": "仅当宽度和高度均小于所选尺寸时隐藏文件",
+      "small_file_filter_options": ["关闭", "160 px", "320 px", "640 px"],
       "section_sorting": "排序",
       "folder_sort": "文件夹",
       "folder_sort_hint": "相册下显示的文件夹排序方式",
@@ -1204,8 +1239,8 @@
         "数量（从高到低）"
       ]
     },
-    "browse": {
-      "title": "浏览",
+    "grid": {
+      "title": "网格",
       "section_grid": "网格",
       "section_open": "打开",
       "dbl_click_thumbnail": "双击缩略图",
@@ -1416,9 +1451,27 @@
       "title": "高级",
       "section_thumbnail_cache": "缩略图缓存",
       "thumbnail_quality": "缩略图质量",
-      "thumbnail_quality_hint": "控制生成缩略图的分辨率。更高设置更清晰，但生成更慢且占用更多磁盘空间。",
+      "thumbnail_quality_hint": "控制生成缩略图的分辨率。更高设置更清晰，但生成更慢且占用更多磁盘空间",
+      "raw_thumbnail_source": "RAW 缩略图来源",
+      "raw_thumbnail_source_hint": "选择 RAW 文件的缩略图生成方式",
+      "raw_thumbnail_source_options": [
+        "RAW 渲染（默认）",
+        "嵌入式预览（更快）"
+      ],
+      "section_map": "地图",
+      "map_provider": "地图服务提供者",
+      "map_provider_hint": "选择地图视图使用的地图服务",
+      "map_provider_options": [
+        "全球（默认）",
+        "中国（天地图）"
+      ],
+      "tianditu_token": "天地图 API Token",
+      "tianditu_token_hint": "使用天地图瓦片时需要提供",
+      "tianditu_token_placeholder": "粘贴你的 Token",
+      "tianditu_token_status_saved": "已保存",
+      "tianditu_token_status_empty": "未配置",
       "clean_unused_thumbnails": "清理未使用的缩略图缓存",
-      "clean_unused_thumbnails_hint": "移除当前图库中不再关联任何文件的已缓存缩略图。",
+      "clean_unused_thumbnails_hint": "移除当前图库中不再关联任何文件的已缓存缩略图",
       "clean": "清理",
       "thumbnail_cache_cleaned": "已清理 {count} 个缩略图，释放 {size}。",
       "thumbnail_quality_options": [

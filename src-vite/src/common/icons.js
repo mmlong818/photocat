@@ -30,6 +30,7 @@ export { default as IconFolderError } from '@/assets/icons/folder-error.svg';
 export { default as IconFolderExpanded } from '@/assets/icons/folder-expanded.svg';
 export { default as IconFolderFavorite } from '@/assets/icons/folder-heart.svg';
 export { default as IconFolderMoveTo } from '@/assets/icons/folder-move-to.svg';
+export { default as IconFolderArrowRight } from '@/assets/icons/folder-arrow-right.svg';
 export { default as IconFolderOff } from '@/assets/icons/folder-off.svg';
 export { default as IconFolders } from '@/assets/icons/folders.svg';
 export { default as IconFolderSearch } from '@/assets/icons/folder-search.svg';

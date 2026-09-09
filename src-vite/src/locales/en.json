@@ -199,6 +199,23 @@
       }
     }
   },
+  "import_organize": {
+    "source": "Source folder",
+    "source_placeholder": "Choose a source folder",
+    "choose_folder": "Choose folder…",
+    "destination": "Destination folder",
+    "folder_layout": "Folder layout",
+    "layout_day": "By day — YYYY/YYYY-MM-DD",
+    "layout_month": "By month — YYYY/YYYY-MM",
+    "layout_year": "By year — YYYY",
+    "layout_none": "One folder",
+    "import": "Import",
+    "preparing": "Preparing import",
+    "importing": "Importing files",
+    "complete": "Import complete",
+    "cancelled": "Import cancelled",
+    "failed": "Failed: {count}"
+  },
   "welcome": {
     "title": "Welcome to 猫叔的图",
     "description": "Your local photo library. Fast, searchable, and always under your control.",
@@ -306,10 +323,11 @@
   },
   "calendar": {
     "title": "Calendar",
-    "month_title": "Month",
-    "day_title": "Day",
-    "switch_to_month": "Switch to Month",
-    "switch_to_day": "Switch to Day",
+    "tabs": {
+      "years": "Years",
+      "months": "Months",
+      "days": "Days"
+    },
     "day": "Day",
     "week": "Week",
     "month": "Month",
@@ -482,6 +500,7 @@
         "building_sets": "Building similar sets",
         "analyzing": "Analyzing similar photos",
         "groups_title": "Similar Sets",
+        "results": "Results",
         "groups_count": "{count} similar sets",
         "load_more": "Load more",
         "error_title": "Unable to load similar photos",
@@ -503,9 +522,12 @@
       "keep_label": "Keep",
       "unkeep_label": "Unkeep",
       "delete_selected": "Delete Selected",
+      "delete_all": "Delete all",
       "move_selected_to_trash": "Move to trash ({count} selected · {size})",
+      "no_removable_files": "No removable files to move to Trash",
       "set_keep": "Keep",
-      "duplicate_files_summary": "{count} duplicates ({size})"
+      "removable_copies_summary": "{count} removable copies · {size}",
+      "similar_photos_summary": "{count} similar photos · {size}"
     }
   },
   "tooltip": {
@@ -548,6 +570,14 @@
     "set_album_cover": {
       "success": "Album cover set successfully",
       "failed": "Failed to set album cover"
+    },
+    "set_desktop_wallpaper": {
+      "success": "Desktop wallpaper updated",
+      "failed": "Failed to set desktop wallpaper"
+    },
+    "refresh_subfolders": {
+      "success": "Subfolders refreshed",
+      "failed": "Failed to refresh subfolders"
     },
     "copy_image": {
       "success": "{count} file(s) copied to clipboard",
@@ -605,7 +635,7 @@
       "exclude_from_search": "Exclude from search",
       "remove": "Remove",
       "delete_folder": "Delete folder",
-      "refresh": "Refresh folder"
+      "refresh_subfolders": "Refresh subfolders"
     },
     "file": {
       "new_folder": "New folder",
@@ -636,6 +666,8 @@
       "reveal_in_file_explorer": "Reveal in File Explorer...",
       "refresh_file_info": "Refresh file info",
       "set_album_cover": "Set as album cover",
+      "set_as": "Set as",
+      "set_desktop_wallpaper": "Set as desktop wallpaper",
       "show_info": "Show info",
       "remove_from_collection": "Remove from Collection"
     },
@@ -647,9 +679,7 @@
     },
     "camera_panel": {
       "camera_title": "Cameras",
-      "lens_title": "Lenses",
-      "switch_to_camera": "Switch to Cameras",
-      "switch_to_lens": "Switch to Lenses"
+      "lens_title": "Lenses"
     },
     "search": {
       "clear_history": "Clear search history"
@@ -811,6 +841,7 @@
       "title": "Move to trash",
       "file_content": "The file '{file}' will be trashed.",
       "files_content": "{count} selected files will be trashed.",
+      "removable_files_content": "All {count} removable files will be trashed.",
       "raw_jpeg_companions_content": "{count} RAW+JPEG companion file(s) will also be deleted.",
       "folder_content": "The folder '{folder}' will be trashed.",
       "ok": "Trash",
@@ -825,6 +856,7 @@
       "title": "Delete permanently",
       "file_content": "The file '{file}' will be permanently deleted.",
       "files_content": "{count} selected files will be permanently deleted.",
+      "removable_files_content": "All {count} removable files will be permanently deleted.",
       "folder_content": "The folder '{folder}' will be permanently deleted.",
       "checkbox": "Delete permanently (cannot be undone)",
       "ok": "Delete",
@@ -1031,7 +1063,7 @@
     "satellite": "Satellite",
     "heatmap": "Heatmap",
     "photo_count": "{count} photos",
-    "no_photos_in_view": "No photos in this area",
+    "no_photos_in_view": "No photos",
     "photos_in_view": "{count} photos in this area",
     "photos_in_view_limited": "Showing first {count} photos - zoom in for more"
   },
@@ -1168,14 +1200,17 @@
       "show_status_bar": "Show status bar",
       "auto_check_updates": "Auto-check for updates"
     },
-    "library": {
-      "title": "Library",
+    "browse": {
+      "title": "Browse",
       "section_album": "Album",
       "show_subfolder_files": "Show files from subfolders",
       "show_subfolder_files_hint": "Folder view includes files in child folders",
-      "section_file_grouping": "File grouping",
+      "section_file_display": "File display",
       "group_raw_jpeg_pairs": "Group RAW Pairs",
       "group_raw_jpeg_pairs_hint": "Show matching RAW and JPEG/HEIC files as a single item",
+      "small_file_filter": "Small file filter",
+      "small_file_filter_hint": "Hide files when both width and height are below the selected size",
+      "small_file_filter_options": ["Off", "160 px", "320 px", "640 px"],
       "section_sorting": "Sorting",
       "folder_sort": "Folders",
       "folder_sort_hint": "Sort order for folders shown under albums",
@@ -1204,8 +1239,8 @@
         "Count (High to low)"
       ]
     },
-    "browse": {
-      "title": "Browse",
+    "grid": {
+      "title": "Grid",
       "section_grid": "Grid",
       "section_open": "Open",
       "dbl_click_thumbnail": "Double-click thumbnail",
@@ -1417,6 +1452,24 @@
       "section_thumbnail_cache": "Thumbnail cache",
       "thumbnail_quality": "Thumbnail quality",
       "thumbnail_quality_hint": "Sets the resolution of generated thumbnails. Higher settings look sharper but take longer to generate and use more disk space",
+      "raw_thumbnail_source": "RAW thumbnail source",
+      "raw_thumbnail_source_hint": "Choose how thumbnails are generated for RAW files",
+      "raw_thumbnail_source_options": [
+        "RAW Rendering (default)",
+        "Embedded preview (faster)"
+      ],
+      "section_map": "Map",
+      "map_provider": "Map provider",
+      "map_provider_hint": "Choose the map service for Map view",
+      "map_provider_options": [
+        "Global (default)",
+        "China (Tianditu)"
+      ],
+      "tianditu_token": "Tianditu API token",
+      "tianditu_token_hint": "Required for Tianditu map tiles",
+      "tianditu_token_placeholder": "Paste your token",
+      "tianditu_token_status_saved": "Saved",
+      "tianditu_token_status_empty": "Not configured",
       "clean_unused_thumbnails": "Clean unused thumbnail cache",
       "clean_unused_thumbnails_hint": "Removes cached thumbnails that are no longer associated with files in this library",
       "clean": "Clean",

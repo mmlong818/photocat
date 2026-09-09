@@ -230,6 +230,52 @@ pub(crate) fn delete_apple_aae_sidecars(file_path: &str, permanently: bool) -> R
     Ok(())
 }
 
+/// Copy Apple edit sidecars alongside an imported file. The destination file
+/// name may have received a conflict suffix, so derive each sidecar name from
+/// the final destination rather than copying its source name verbatim.
+pub(crate) fn copy_apple_aae_sidecars_for_import(
+    source_file_path: &str,
+    destination_file_path: &str,
+) -> Result<Vec<PathBuf>, String> {
+    let source = Path::new(source_file_path);
+    let destination = Path::new(destination_file_path);
+    let mut copied = Vec::new();
+
+    for sidecar in apple_aae_sidecar_paths(source_file_path) {
+        let Some(name) = build_aae_transfer_target_name(
+            source,
+            &sidecar,
+            destination.file_name().and_then(|name| name.to_str()).ok_or_else(|| {
+                format!("Invalid import destination: {}", destination.display())
+            })?,
+            destination.file_stem().and_then(|stem| stem.to_str()).ok_or_else(|| {
+                format!("Invalid import destination: {}", destination.display())
+            })?,
+        ) else {
+            continue;
+        };
+        let target = destination
+            .parent()
+            .ok_or_else(|| format!("Invalid import destination: {}", destination.display()))?
+            .join(name);
+        if target.exists() {
+            for copied_path in copied {
+                let _ = fs::remove_file(copied_path);
+            }
+            return Err(format!("Destination sidecar already exists: {}", target.display()));
+        }
+        if let Err(error) = fs::copy(&sidecar, &target) {
+            for copied_path in copied {
+                let _ = fs::remove_file(copied_path);
+            }
+            return Err(format!("Failed to copy sidecar '{}': {}", sidecar.display(), error));
+        }
+        copied.push(target);
+    }
+
+    Ok(copied)
+}
+
 // ---------------------------------------------------------------------------
 // Transfer (move / copy) helpers
 // ---------------------------------------------------------------------------

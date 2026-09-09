@@ -109,7 +109,7 @@ import { useI18n } from 'vue-i18n';
 import { useToast } from '@/common/toast';
 import { addFilesToCollection, createCollection, deleteCollection as deleteCollectionApi, getCollectionSelectionCounts, listCollections, removeFilesFromCollection, renameCollection } from '@/common/api';
 import { IconAdd, IconBookmark, IconClose, IconEdit, IconSearch, IconTrash } from '@/common/icons';
-import { config } from '@/common/config';
+import { config, libConfig } from '@/common/config';
 import MessageBox from '@/components/MessageBox.vue';
 import ModalDialog from '@/components/ModalDialog.vue';
 import TButton from '@/components/TButton.vue';
@@ -208,7 +208,12 @@ function setCollectionRowRef(id: number, element: Element | null) {
 }
 
 async function loadCollections() {
-  collections.value = (await listCollections()) || [];
+  const result = await listCollections();
+  const sidebarCounts = libConfig.collection.counts || {};
+  collections.value = (result || []).map((collection: any) => ({
+    ...collection,
+    count: Number(sidebarCounts[String(collection.id)] || 0),
+  }));
 }
 
 async function loadSelectionCounts() {

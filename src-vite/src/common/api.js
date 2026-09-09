@@ -306,10 +306,10 @@ export async function getSmartQueryFilePosition(params, fileId) {
 // albums
 
 // get all albums
-export async function getAllAlbums() {
+export async function getAllAlbums(refreshAccessibility = false) {
   try {
     let albums = [];
-    const fetchedAlbums = await invoke('get_all_albums');
+    const fetchedAlbums = await invoke('get_all_albums', { refreshAccessibility });
     console.log('get_all_albums', fetchedAlbums);
     if (fetchedAlbums) {
       albums = fetchedAlbums.map(album => ({
@@ -344,7 +344,7 @@ export async function getAllAlbumFolders() {
 
 export async function listAlbums() {
   try {
-    return await invoke('get_all_albums');
+    return await invoke('get_all_albums', { refreshAccessibility: false });
   } catch (error) {
     console.error('Failed to list albums:', error);
   }
@@ -368,6 +368,15 @@ export async function getAlbum(albumId) {
   return null;
 }
 
+export async function checkAlbumAccessibility(albumId) {
+  try {
+    return Boolean(await invoke('check_album_accessibility', { albumId }));
+  } catch (error) {
+    console.error('checkAlbumAccessibility error:', error);
+    return false;
+  }
+}
+
 // recount files for an album and return updated album
 export async function recountAlbum(albumId) {
   if(!albumId) {
@@ -377,6 +386,15 @@ export async function recountAlbum(albumId) {
     return await invoke('recount_album', { albumId });
   } catch (error) {
     console.error('recountAlbum...', error);
+  }
+  return null;
+}
+
+export async function getAlbumVisibleCounts(smallFileFilter = config.settings.smallFileFilter) {
+  try {
+    return await invoke('get_album_visible_counts', { smallFileFilter });
+  } catch (error) {
+    console.error('getAlbumVisibleCounts:', error);
   }
   return null;
 }
@@ -439,6 +457,10 @@ export async function openExternalUrl(url) {
     console.error('Failed to open external URL:', error);
     throw error;
   }
+}
+
+export async function setDesktopWallpaper(filePath, companionPath = null) {
+  return invoke('set_desktop_wallpaper', { filePath, companionPath });
 }
 
 // open a file with a specific external app
@@ -703,19 +725,6 @@ export async function revealPath(path) {
 
 // files
 
-// get total files count and sum
-export async function getTotalCountAndSum() {
-  try {
-    const result = await invoke('get_total_count_and_sum');
-    if(result) {
-      return result;
-    };
-  } catch (error) {
-    console.error('getTotalCountAndSum error:', error);
-  }
-  return null;
-}
-
 /// get query files count and sum
 export async function getQueryCountAndSum(params) {
   try {
@@ -726,6 +735,12 @@ export async function getQueryCountAndSum(params) {
   } catch (error) {
     console.error('getQueryCountAndSum error:', error);
   }
+  return null;
+}
+
+export async function getLibraryVisibleCounts(smallFileFilter = config.settings.smallFileFilter) {
+  try { return await invoke('get_library_visible_counts', { smallFileFilter }); }
+  catch (error) { console.error('getLibraryVisibleCounts:', error); }
   return null;
 }
 
@@ -846,6 +861,15 @@ export async function listCollections() {
     return await invoke('list_collections');
   } catch (error) {
     console.error('Failed to list collections:', error);
+  }
+  return null;
+}
+
+export async function getCollectionCounts(smallFileFilter = config.settings.smallFileFilter) {
+  try {
+    return await invoke('get_collection_counts', { smallFileFilter });
+  } catch (error) {
+    console.error('Failed to get collection counts:', error);
   }
   return null;
 }
@@ -1009,14 +1033,13 @@ export async function getFolderFiles(folderId, folderPath, fromDbOnly) {
 };
 
 // sync a single folder's mtime and DB records with the filesystem
-export async function syncAlbumFolderMtimes(albumId, folderId, folderPath, reconcileMissing = false) {
+export async function syncAlbumFolderMtimes(albumId, folderId, folderPath) {
   try {
     const result = await invoke('sync_album_folder_mtimes', {
       albumId,
       folderId,
       folderPath,
       groupRawJpegPairs: Boolean(config.settings.groupRawJpegPairs),
-      reconcileMissing,
     });
     if (result) {
       return {
@@ -1029,6 +1052,10 @@ export async function syncAlbumFolderMtimes(albumId, folderId, folderPath, recon
   }
   return null;
 };
+
+export async function refreshAlbumSubfolders(albumId, folderPath) {
+  return await invoke('refresh_album_subfolders', { albumId, folderPath });
+}
 
 // get the thumbnail count of the folder
 export async function getFolderThumbCount(folderId) {
@@ -1179,7 +1206,7 @@ export async function editFileComment(fileId, comment) {
 // get file thumb
 export async function getFileThumb(fileId, filePath, fileType, orientation, thumbnailSize, forceRegenerate, thumbnailSeekPercent = null) {
   try {
-    const result = await invoke('get_file_thumb', { fileId, filePath, fileType, orientation, thumbnailSize, forceRegenerate, thumbnailSeekPercent });
+    const result = await invoke('get_file_thumb', { fileId, filePath, fileType, orientation, thumbnailSize, rawThumbnailSource: config.settings.rawThumbnailSource || 'processed', forceRegenerate, thumbnailSeekPercent });
     if(result) {
       return result;
     };
@@ -1198,18 +1225,10 @@ export async function cleanUnusedThumbnailCache() {
   }
 }
 
-export async function refreshFolderThumbnails(albumId, folderPath) {
-  try {
-    return await invoke('refresh_folder_thumbnails', { albumId, folderPath });
-  } catch (error) {
-    console.error('Failed to refresh folder thumbnails:', error);
-    throw error;
-  }
-}
 
 export async function getFileThumbById(fileId, thumbnailSize, forceRegenerate = false) {
   try {
-    const result = await invoke('get_file_thumb_by_id', { fileId, thumbnailSize, forceRegenerate });
+    const result = await invoke('get_file_thumb_by_id', { fileId, thumbnailSize, rawThumbnailSource: config.settings.rawThumbnailSource || 'processed', forceRegenerate });
     if (result) {
       return result;
     }
@@ -1219,9 +1238,9 @@ export async function getFileThumbById(fileId, thumbnailSize, forceRegenerate = 
   return null;
 }
 
-export async function getFileThumbs(files, thumbnailSize, forceRegenerate = false) {
+export async function getFileThumbs(files, thumbnailSize, forceRegenerate = false, trustCached = false) {
   try {
-    return await invoke('get_file_thumbs', { files, thumbnailSize, forceRegenerate });
+    return await invoke('get_file_thumbs', { files, thumbnailSize, rawThumbnailSource: config.settings.rawThumbnailSource || 'processed', forceRegenerate, trustCached });
   } catch (error) {
     console.log('Failed to get file thumbs:', error);
   }
@@ -1267,6 +1286,22 @@ export async function importFile(filePath, folderId, folderPath) {
     console.error('importFile error:', error);
     return null;
   }
+}
+
+export async function importAndOrganize(albumId, sourcePath, destinationPath, layout) {
+  return await invoke('import_and_organize', { albumId, sourcePath, destinationPath, layout });
+}
+
+export async function cancelImportAndOrganize() {
+  return await invoke('cancel_import_and_organize');
+}
+
+export async function listenImportOrganizeProgress(callback) {
+  return await listen('import-organize-progress', callback);
+}
+
+export async function listenImportOrganizeFinished(callback) {
+  return await listen('import-organize-finished', callback);
 }
 
 export async function importUrl(url, folderId, folderPath) {
@@ -1489,15 +1524,24 @@ export async function batchUpdateFileMetadata(params) {
 // tags
 
 // get all tags
-export async function getAllTags(sort = 0) {
+export async function getAllTags(sort = 0, smallFileFilter = config.settings.smallFileFilter) {
   try {
-    const tags = await invoke('get_all_tags', { sort });
+    const tags = await invoke('get_all_tags', { sort, smallFileFilter });
     console.log('getAllTags:', tags);
     if (tags) {
       return tags;
     }
   } catch (error) {
     console.error('Failed to get all tags:', error);
+  }
+  return null;
+}
+
+export async function getTagCounts(smallFileFilter = config.settings.smallFileFilter) {
+  try {
+    return await invoke('get_tag_counts', { smallFileFilter });
+  } catch (error) {
+    console.error('Failed to get tag counts:', error);
   }
   return null;
 }
@@ -1604,9 +1648,9 @@ export async function applyTagsToFiles(fileIds, addTagIds, removeTagIds) {
 // calendar
 
 // get taken dates
-export async function getTakenDates(sort = 0) {
+export async function getTakenDates(sort = 0, smallFileFilter = config.settings.smallFileFilter) {
   try {
-    const taken_dates = await invoke('get_taken_dates', { sort });
+    const taken_dates = await invoke('get_taken_dates', { sort, smallFileFilter });
     if (taken_dates) {
       return taken_dates;
     }
@@ -1619,9 +1663,9 @@ export async function getTakenDates(sort = 0) {
 // camera
 
 // get camera info
-export async function getCameraInfo(sort = 0) {
+export async function getCameraInfo(sort = 0, smallFileFilter = config.settings.smallFileFilter) {
   try {
-    const cameraInfo = await invoke('get_camera_info', { sort });
+    const cameraInfo = await invoke('get_camera_info', { sort, smallFileFilter });
     if (cameraInfo) {
       return cameraInfo;
     }
@@ -1632,9 +1676,9 @@ export async function getCameraInfo(sort = 0) {
 }
 
 // get lens info
-export async function getLensInfo(sort = 0) {
+export async function getLensInfo(sort = 0, smallFileFilter = config.settings.smallFileFilter) {
   try {
-    const lensInfo = await invoke('get_lens_info', { sort });
+    const lensInfo = await invoke('get_lens_info', { sort, smallFileFilter });
     if (lensInfo) {
       return lensInfo;
     }
@@ -1647,9 +1691,9 @@ export async function getLensInfo(sort = 0) {
 // location
 
 // get location info
-export async function getLocationInfo(sort = 0) {
+export async function getLocationInfo(sort = 0, smallFileFilter = config.settings.smallFileFilter) {
   try {
-    const locationInfo = await invoke('get_location_info', { sort });
+    const locationInfo = await invoke('get_location_info', { sort, smallFileFilter });
     if (locationInfo) {
       return locationInfo;
     }
@@ -1796,6 +1840,7 @@ export async function indexAlbum(albumId, skipFilePath = null) {
     await invoke('index_album', {
       albumId,
       thumbnailSize: config.settings.thumbnailSize || 512,
+      rawThumbnailSource: config.settings.rawThumbnailSource || 'processed',
       skipFilePath,
       groupRawJpegPairs: Boolean(config.settings.groupRawJpegPairs),
     });
@@ -1889,13 +1934,19 @@ export async function dedupSetKeep(groupId, fileId) {
   return await invoke('dedup_set_keep', { groupId, fileId });
 }
 
-// delete selected duplicates
-export async function dedupDeleteSelected(groupIds = null, fileIds = null) {
+// Delete explicitly selected duplicates or every removable duplicate.
+export async function dedupDelete({
+  groupIds = null,
+  fileIds = null,
+  deleteAll = false,
+  permanently = false,
+} = {}) {
   try {
-    const result = await invoke('dedup_delete_selected', { groupIds, fileIds });
-    return result;
+    return await invoke('dedup_delete', {
+      request: { groupIds, fileIds, deleteAll, permanently },
+    });
   } catch (error) {
-    console.error('dedupDeleteSelected error:', error);
+    console.error('dedupDelete error:', error);
     throw error;
   }
 }
@@ -1924,6 +1975,7 @@ export async function similarGetEligibleCount(params = null, collectionId = null
 export async function similarListGroups(scopeKey, limit = 100, offset = 0) {
   return await invoke('similar_list_groups', { scopeKey, limit, offset });
 }
+export async function similarGetOverview(scopeKey) { return await invoke('similar_get_overview', { scopeKey }); }
 export async function similarGetGroup(groupId, scopeKey) { return await invoke('similar_get_group', { groupId, scopeKey }); }
 export async function similarSetKeep(groupId, fileId, scopeKey) { return await invoke('similar_set_keep', { groupId, fileId, scopeKey }); }
 export async function similarHasScan(scopeKey) { return await invoke('similar_has_scan', { scopeKey }); }
@@ -1979,9 +2031,9 @@ export async function isFaceIndexing() {
 }
 
 // get face indexing stats
-export async function getFaceStats() {
+export async function getFaceStats(smallFileFilter = config.settings.smallFileFilter) {
   try {
-    return await invoke('get_face_stats');
+    return await invoke('get_face_stats', { smallFileFilter });
   } catch (error) {
     console.error('Failed to get face stats:', error);
     return null;
@@ -2018,9 +2070,9 @@ export async function getPersons(sort = 0) {
   return null;
 }
 
-export async function getPersonsPage(sort = 0, offset = 0, limit = 100, search = '') {
+export async function getPersonsPage(request) {
   try {
-    return await invoke('get_persons_page', { sort, offset, limit, search });
+    return await invoke('get_persons_page', { request });
   } catch (error) {
     console.error('Failed to get persons page:', error);
   }

@@ -122,6 +122,7 @@ pub fn register_protocols(builder: Builder<Wry>) -> Builder<Wry> {
                                     file_type,
                                     orientation,
                                     thumbnail_size,
+                                    false,
                                     album_id,
                                     false,
                                     None,
@@ -135,11 +136,15 @@ pub fn register_protocols(builder: Builder<Wry>) -> Builder<Wry> {
             });
         })
         .register_asynchronous_uri_scheme_protocol("preview", |_ctx, request, responder| {
-            // URL format: preview://localhost/{library_id}/{file_id}
+            // URL format: preview://localhost/{library_id}/{file_id}?rawThumbnailSource=embedded
             // library_id is for browser cache isolation only; file_id is the last segment
             let path = request.uri().path();
             let file_id_str = path.rsplit('/').next().unwrap_or("");
             let file_id: i64 = file_id_str.parse().unwrap_or(0);
+            let prefer_embedded_raw_preview = request
+                .uri()
+                .query()
+                .is_some_and(|query| query.split('&').any(|item| item == "rawThumbnailSource=embedded"));
 
             if file_id <= 0 {
                 responder.respond(text_response(
@@ -169,7 +174,12 @@ pub fn register_protocols(builder: Builder<Wry>) -> Builder<Wry> {
             };
 
             tauri::async_runtime::spawn(async move {
-                let response = match t_image::get_file_image_bytes_cached(&file_path).await {
+                let response = match t_image::get_file_image_bytes_cached(
+                    &file_path,
+                    prefer_embedded_raw_preview,
+                )
+                .await
+                {
                     Ok(data) => image_response(data),
                     Err(_) => text_response(http::StatusCode::NOT_FOUND, "preview not found"),
                 };

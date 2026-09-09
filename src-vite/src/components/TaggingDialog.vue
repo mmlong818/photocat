@@ -157,6 +157,7 @@ import {
 import { IconAdd, IconClose, IconEdit, IconSearch, IconTag, IconTrash } from '@/common/icons';
 import MessageBox from './MessageBox.vue';
 import TButton from './TButton.vue';
+import { libConfig } from '@/common/config';
 import { useUIStore } from '@/stores/uiStore';
 import ModalDialog from '@/components/ModalDialog.vue';
 
@@ -223,7 +224,12 @@ onBeforeUnmount(() => {
 
 // load all tags
 async function loadAllTags() {
-  allTags.value = (await getAllTags()) || [];
+  const tags = await getAllTags(0);
+  const sidebarCounts = libConfig.tag.counts || {};
+  allTags.value = (tags || []).map((tag: any) => ({
+    ...tag,
+    count: Number(sidebarCounts[String(tag.id)] || 0),
+  }));
 }
 
 async function loadExistingTagsForFiles() {

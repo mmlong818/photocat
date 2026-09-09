@@ -1,8 +1,7 @@
 use crate::t_sqlite::{AFile, QueryParams};
-use crate::t_utils;
-use rusqlite::{Connection, OptionalExtension, params};
+use rusqlite::{params, Connection, OptionalExtension};
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, HashSet};
 use std::fs::File;
 use std::io::{self, Read};
 use std::sync::atomic::{AtomicBool, Ordering};
@@ -40,9 +39,19 @@ impl Default for DedupScanStatus {
 #[serde(rename_all = "camelCase")]
 pub struct DedupDeleteResult {
     pub deleted_file_ids: Vec<i64>,
+    pub deleted_count: usize,
     pub failed_count: usize,
     pub errors: Vec<String>,
     pub trash_failed_file_ids: Vec<i64>,
+}
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct DedupDeleteRequest {
+    pub group_ids: Option<Vec<i64>>,
+    pub file_ids: Option<Vec<i64>>,
+    pub delete_all: bool,
+    pub permanently: bool,
 }
 
 #[derive(Default)]
@@ -805,16 +814,34 @@ pub fn set_keep(group_id: i64, file_id: i64) -> Result<(), String> {
     Ok(())
 }
 
-pub fn delete_selected(
-    group_ids: Option<Vec<i64>>,
-    file_ids: Option<Vec<i64>>,
-) -> Result<DedupDeleteResult, String> {
+pub fn delete(request: DedupDeleteRequest) -> Result<DedupDeleteResult, String> {
     let mut conn = get_db_conn()?;
     let tx = conn.transaction().map_err(|e| e.to_string())?;
 
-    let mut files_to_delete: Vec<(i64, String)> = Vec::new();
+    let mut files_to_delete: Vec<crate::t_cmds::BatchDeleteFile> = Vec::new();
 
-    if let Some(ids) = file_ids {
+    if request.delete_all {
+        // Guard against a corrupted group where every item has is_keep = 0:
+        // only delete non-keep items from groups that still have a keep item.
+        let mut stmt = tx
+            .prepare(
+                "SELECT a.id, f.path || '/' || a.name
+                 FROM duplicate_group_items dgi
+                 JOIN afiles a ON dgi.file_id = a.id
+                 JOIN afolders f ON a.folder_id = f.id
+                 WHERE dgi.is_keep = 0
+                   AND EXISTS (SELECT 1 FROM duplicate_group_items k
+                               WHERE k.group_id = dgi.group_id AND k.is_keep = 1)",
+            )
+            .map_err(|e| e.to_string())?;
+        let mut iter = stmt
+            .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
+            .map_err(|e| e.to_string())?;
+        for row in &mut iter {
+            let (file_id, file_path) = row.map_err(|e| e.to_string())?;
+            files_to_delete.push(crate::t_cmds::BatchDeleteFile { file_id, file_path });
+        }
+    } else if let Some(ids) = request.file_ids {
         let mut stmt = tx
             .prepare(
                 "SELECT a.id, f.path || '/' || a.name
@@ -829,10 +856,11 @@ pub fn delete_selected(
                 .query_map(params![id], |row| Ok((row.get(0)?, row.get(1)?)))
                 .map_err(|e| e.to_string())?;
             for row in &mut iter {
-                files_to_delete.push(row.map_err(|e| e.to_string())?);
+                let (file_id, file_path) = row.map_err(|e| e.to_string())?;
+                files_to_delete.push(crate::t_cmds::BatchDeleteFile { file_id, file_path });
             }
         }
-    } else if let Some(gids) = group_ids {
+    } else if let Some(gids) = request.group_ids {
         for gid in gids {
             let mut stmt = tx
                 .prepare(
@@ -848,7 +876,8 @@ pub fn delete_selected(
                 .query_map(params![gid], |row| Ok((row.get(0)?, row.get(1)?)))
                 .map_err(|e| e.to_string())?;
             for row in &mut iter {
-                files_to_delete.push(row.map_err(|e| e.to_string())?);
+                let (file_id, file_path) = row.map_err(|e| e.to_string())?;
+                files_to_delete.push(crate::t_cmds::BatchDeleteFile { file_id, file_path });
             }
         }
     } else {
@@ -865,27 +894,26 @@ pub fn delete_selected(
             .query_map([], |row| Ok((row.get(0)?, row.get(1)?)))
             .map_err(|e| e.to_string())?;
         for row in &mut iter {
-            files_to_delete.push(row.map_err(|e| e.to_string())?);
+            let (file_id, file_path) = row.map_err(|e| e.to_string())?;
+            files_to_delete.push(crate::t_cmds::BatchDeleteFile { file_id, file_path });
         }
     }
 
     tx.commit().map_err(|e| e.to_string())?;
 
+    let candidate_ids: HashSet<i64> = files_to_delete.iter().map(|file| file.file_id).collect();
+    let delete_result = crate::t_cmds::delete_files_grouped(files_to_delete, request.permanently)?;
+    let deleted_count = delete_result
+        .deleted_file_ids
+        .iter()
+        .filter(|file_id| candidate_ids.contains(file_id))
+        .count();
+    let deleted_file_ids = if request.delete_all {
+        Vec::new()
+    } else {
+        delete_result.deleted_file_ids
+    };
     let mut failures: Vec<String> = Vec::new();
-    let mut deleted_file_ids: Vec<i64> = Vec::new();
-    let mut trash_failed_file_ids: Vec<i64> = Vec::new();
-    for (file_id, file_path) in files_to_delete {
-        if let Err(e) = t_utils::trash_path(&file_path) {
-            trash_failed_file_ids.push(file_id);
-            failures.push(format!("Failed to move to trash: {} ({})", file_path, e));
-            continue;
-        }
-        match AFile::delete(file_id) {
-            Ok(0) => failures.push(format!("File not removed from DB: id={}", file_id)),
-            Ok(_) => deleted_file_ids.push(file_id),
-            Err(e) => failures.push(format!("Failed to delete DB row for id={}: {}", file_id, e)),
-        }
-    }
 
     // Clean up empty groups. Report cleanup errors without hiding earlier partial deletes.
     match get_db_conn() {
@@ -906,8 +934,9 @@ pub fn delete_selected(
 
     Ok(DedupDeleteResult {
         deleted_file_ids,
-        failed_count: failures.len(),
+        deleted_count,
+        failed_count: delete_result.failed_count + failures.len(),
         errors: failures,
-        trash_failed_file_ids,
+        trash_failed_file_ids: delete_result.trash_failed_file_ids,
     })
 }

@@ -493,6 +493,29 @@ pub fn list_groups(scope_key: &str, limit: i64, offset: i64) -> Result<serde_jso
     Ok(serde_json::json!({"items": out, "total": total}))
 }
 
+pub fn get_overview(scope_key: &str) -> Result<serde_json::Value, String> {
+    let conn = get_db_conn()?;
+    let (total_files, total_size) = conn
+        .query_row(
+            "SELECT
+                COUNT(*),
+                COALESCE(SUM(a.size), 0)
+             FROM similarity_group_items i
+             JOIN similarity_groups g ON g.id = i.group_id
+             JOIN similarity_scans s ON s.id = g.scan_id
+             JOIN afiles a ON a.id = i.file_id
+             WHERE s.scope_key = ?1
+               AND (SELECT COUNT(*) FROM similarity_group_items WHERE group_id = i.group_id) > 1",
+            params![scope_key],
+            |row| Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?)),
+        )
+        .map_err(|e| e.to_string())?;
+    Ok(serde_json::json!({
+        "total_files": total_files,
+        "total_size": total_size,
+    }))
+}
+
 pub fn get_group(group_id: i64, scope_key: &str) -> Result<serde_json::Value, String> {
     let conn = get_db_conn()?;
     let exists: bool = conn

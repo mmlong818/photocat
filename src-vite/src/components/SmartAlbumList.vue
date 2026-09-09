@@ -205,15 +205,16 @@ watch(
 );
 
 function clickCustomSmartAlbum(smartAlbum: any) {
-  uiStore.smartAlbumCountRequestedFor = String(smartAlbum.id);
-  uiStore.smartAlbumCountRequestTick++;
+  uiStore.requestCountUpdate({ source: 'smart-album', id: String(smartAlbum.id) });
   libConfig.smartAlbum.type = 'custom';
   libConfig.smartAlbum.id = smartAlbum.id;
 }
 
 const isSmartAlbumSelected = (smartAlbum: any) => libConfig.smartAlbum.type === 'custom' && libConfig.smartAlbum.id === smartAlbum.id;
-const getSmartAlbumCount = (smartAlbum: any) => Number(smartAlbum?.count || 0);
-const hasSmartAlbumCount = (smartAlbum: any) => smartAlbum?.count !== null && smartAlbum?.count !== undefined;
+const getSmartAlbumCount = (smartAlbum: any) => {
+  return Number(smartAlbum?.count || 0);
+};
+const hasSmartAlbumCount = (smartAlbum: any) => getSmartAlbumCount(smartAlbum) > 0;
 
 function clickAddSmartAlbum() {
   editingSmartAlbum.value = null;

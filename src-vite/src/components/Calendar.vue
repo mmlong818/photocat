@@ -2,28 +2,81 @@
 
   <div class="sidebar-panel overflow-hidden">
     <div class="sidebar-panel-header">
-      <span class="sidebar-panel-header-title flex-1">{{ calendarTitle }}</span>
-      <label
-        class="swap swap-flip inline-grid w-6 h-6 place-items-center text-base-content/70 hover:text-base-content"
-        :title="config.settings.showToolTip ? calendarToggleTooltip : undefined"
-        :aria-label="calendarToggleTooltip"
-      >
-        <input
-          type="checkbox"
-          :checked="!config.calendar.isMonthly"
-          @change="toggleCalendarView"
-        />
-        <IconCalendarMonth class="swap-off col-start-1 row-start-1 self-center justify-self-center w-4 h-4" />
-        <IconCalendarDay class="swap-on col-start-1 row-start-1 self-center justify-self-center w-4 h-4" />
-      </label>
+      <div class="sidebar-header-tabs" role="tablist" :aria-label="props.titlebar || $t('calendar.title')">
+        <button
+          v-for="tab in calendarTabs"
+          :key="tab.value"
+          type="button"
+          role="tab"
+          class="sidebar-header-tab"
+          :class="{ 'tab-active': calendarView === tab.value }"
+          :aria-selected="calendarView === tab.value"
+          @click="setCalendarView(tab.value)"
+        >
+          {{ tab.label }}
+        </button>
+      </div>
     </div>
 
     <!-- calendar -->
     <div ref="scrollable" v-if="Object.keys(calendar_dates).length > 0"
       class="flex-1 flex flex-col overflow-x-hidden overflow-y-auto"
     >
+      <template v-if="calendarView === 'years'">
+        <ul>
+          <li v-for="item in calendarYearsItems" :key="item.year">
+            <div
+              :class="[
+                'sidebar-item',
+                isYearSelected(item.year) ? 'sidebar-item-selected' : 'sidebar-item-hover',
+              ]"
+              @click="selectYear(item.year)"
+            >
+              <IconRight
+                :class="['p-1 w-6 h-6 shrink-0 transition-transform', isYearExpanded(item.year) ? 'rotate-90' : '']"
+                @click.stop="toggleYear(item.year)"
+              />
+              <span class="sidebar-item-label">{{ item.year }}</span>
+              <span class="sidebar-item-count">{{ item.count.toLocaleString() }}</span>
+            </div>
+            <ul v-if="isYearExpanded(item.year)">
+              <li v-for="month in item.months" :key="`${item.year}-${month.month}`" class="pl-4">
+                <div
+                  :class="[
+                    'sidebar-item sidebar-item-compact ml-2',
+                    isMonthSelected(item.year, month.month) ? 'sidebar-item-selected' : 'sidebar-item-hover',
+                  ]"
+                  @click="selectMonth(item.year, month.month)"
+                >
+                  <IconRight
+                    :class="['p-1 w-6 h-6 shrink-0 transition-transform', isMonthExpanded(item.year, month.month) ? 'rotate-90' : '']"
+                    @click.stop="toggleMonth(item.year, month.month)"
+                  />
+                  <span class="sidebar-item-label">{{ formatMonth(item.year, month.month) }}</span>
+                  <span class="sidebar-item-count">{{ month.count.toLocaleString() }}</span>
+                </div>
+                <ul v-if="isMonthExpanded(item.year, month.month)">
+                  <li v-for="day in month.days" :key="`${item.year}-${month.month}-${day.date}`" class="pl-8">
+                    <div
+                      :class="[
+                        'sidebar-item sidebar-item-compact ml-2',
+                        isDaySelected(item.year, month.month, day.date) ? 'sidebar-item-selected' : 'sidebar-item-hover',
+                      ]"
+                      @click="selectDay(item.year, month.month, day.date)"
+                    >
+                      <IconCalendarDay class="mx-1 w-4 h-4 shrink-0" />
+                      <span class="sidebar-item-label">{{ formatDay(item.year, month.month, day.date) }}</span>
+                      <span class="sidebar-item-count">{{ day.count.toLocaleString() }}</span>
+                    </div>
+                  </li>
+                </ul>
+              </li>
+            </ul>
+          </li>
+        </ul>
+      </template>
       <div
-        v-if="config.calendar.isMonthly"
+      v-else-if="calendarView === 'months'"
         class="grid grid-cols-[repeat(auto-fill,minmax(15rem,1fr))] items-start gap-2 px-1"
       >
         <CalendarMonthly
@@ -60,38 +113,47 @@
 
 <script setup lang="ts">
 
-import { ref, computed, onMounted, watch, nextTick } from 'vue';
+import { ref, computed, onMounted, onUnmounted, watch, nextTick } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { config, libConfig } from '@/common/config';
 import { getTakenDates } from '@/common/api';
-import { IconCalendarDay, IconCalendarMonth } from '@/common/icons';
+import { SIDEBAR } from '@/common/constants';
+import { IconCalendarDay, IconRight } from '@/common/icons';
 
 import CalendarMonthly from '@/components/CalendarMonthly.vue';
 import CalendarDaily from '@/components/CalendarDaily.vue';
 
-// props
 const props = defineProps({
-  titlebar: String
+  titlebar: String,
 });
 
 /// i18n
 const { locale, messages } = useI18n();
 const localeMsg = computed(() => messages.value[locale.value] as any);
-const calendarTitle = computed(() =>
-  config.calendar.isMonthly
-    ? (localeMsg.value.calendar.month_title || localeMsg.value.calendar.month || 'Month')
-    : (localeMsg.value.calendar.day_title || localeMsg.value.calendar.day || 'Day')
-);
-const calendarToggleTooltip = computed(() =>
-  config.calendar.isMonthly
-    ? (localeMsg.value.calendar.switch_to_day || 'Switch to Day')
-    : (localeMsg.value.calendar.switch_to_month || 'Switch to Month')
-);
+type CalendarView = 'years' | 'months' | 'days';
+const calendarView = computed<CalendarView>(() => {
+  const view = config.calendar.view;
+  return view === 'years' || view === 'months' || view === 'days' ? view : 'years';
+});
+const calendarTabs = computed(() => [
+  { value: 'years' as const, label: localeMsg.value.calendar.tabs?.years || 'Years' },
+  { value: 'months' as const, label: localeMsg.value.calendar.tabs?.months || 'Months' },
+  { value: 'days' as const, label: localeMsg.value.calendar.tabs?.days || 'Days' },
+]);
 
 const scrollable = ref<HTMLDivElement | null>(null); // Ref for the scrollable element
 type CalendarDates = Record<number, Record<number, { date: number; count: number }[]>>;
 const calendar_dates = ref<CalendarDates>({});
 const isLoading = ref(true);
+const expandedYears = ref<number[]>([]);
+const expandedMonths = ref<string[]>([]);
+let isCalendarMounted = true;
+let calendarRequestVersion = 0;
+
+onUnmounted(() => {
+  isCalendarMounted = false;
+  calendarRequestVersion++;
+});
 
 function buildHeatmapThresholds(values: number[]): number[] | null {
   const sorted = values.filter(value => value > 0).sort((a, b) => a - b);
@@ -157,6 +219,27 @@ const sorted_daily_items = computed(() => {
   });
 });
 
+const calendarYearsItems = computed(() => {
+  const ascending = config.settings.calendarSort % 2 === 0;
+  return sorted_calendar_items.value.map(({ year, months }) => {
+    const monthItems = Object.keys(months).map(Number)
+      .sort((a, b) => ascending ? a - b : b - a)
+      .map(month => {
+        const days = [...months[month]].sort((a, b) => ascending ? a.date - b.date : b.date - a.date);
+        return {
+          month,
+          days,
+          count: days.reduce((total, day) => total + Number(day.count || 0), 0),
+        };
+      });
+    return {
+      year,
+      months: monthItems,
+      count: monthItems.reduce((total, month) => total + month.count, 0),
+    };
+  });
+});
+
 onMounted(async () => {
   console.log('Calendar.vue mounted');
   await getCalendarDates();
@@ -171,13 +254,27 @@ onMounted(async () => {
   // }
 });
 
-watch(() => [config.calendar.isMonthly, config.settings.calendarSort], () => {
+watch(() => [config.calendar.view, config.settings.calendarSort], () => {
+  if (calendarView.value === 'years') expandSelectedCalendarPath();
   scrollToSelected();
 });
 
-watch(() => config.settings.calendarSort, async () => {
-  await getCalendarDates();
+// Only refresh the active view. Inactive panel data is refreshed on re-entry.
+watch(() => [config.settings.calendarSort, config.settings.smallFileFilter], async () => {
+  if (libConfig.activePane === 'main' && config.main.sidebarIndex === SIDEBAR.CALENDAR) await getCalendarDates();
 });
+
+watch(() => [config.main.sidebarIndex, libConfig.activePane], async () => {
+  if (libConfig.activePane === 'main' && config.main.sidebarIndex === SIDEBAR.CALENDAR) await getCalendarDates();
+});
+
+watch(
+  () => [libConfig.calendar.year, libConfig.calendar.month, libConfig.calendar.date],
+  () => {
+    if (calendarView.value === 'years') expandSelectedCalendarPath();
+    scrollToSelected();
+  },
+);
 
 function scrollToSelected() {
   nextTick(() => {
@@ -193,47 +290,123 @@ function scrollToSelected() {
   });
 }
 
-function switchToMonthlyView() {
-  libConfig.calendar.date = -1;  // -1 means selecting a month
-  config.calendar.isMonthly = true;
-}
+function setCalendarView(view: CalendarView) {
+  if (view === calendarView.value) return;
 
-function switchToDailyView() {
-  // if a year is selected in month view
-  if (config.calendar.isMonthly && libConfig.calendar.month === -1) {
+  if (view === 'months') {
+    libConfig.calendar.date = -1;
+  } else if (view === 'days' && libConfig.calendar.month === -1) {
     const year = libConfig.calendar.year;
     if (year !== null && year !== undefined && calendar_dates.value[year]) {
       const months = Object.keys(calendar_dates.value[year]).map(Number);
       if (months.length > 0) {
-        if (config.settings.calendarSort % 2 === 0) {
-          libConfig.calendar.month = Math.min(...months);
-        } else {
-          libConfig.calendar.month = Math.max(...months);
-        }
+        libConfig.calendar.month = config.settings.calendarSort % 2 === 0
+          ? Math.min(...months)
+          : Math.max(...months);
       }
     }
   }
-  config.calendar.isMonthly = false;
+
+  config.calendar.view = view;
 }
 
-function toggleCalendarView() {
-  if (config.calendar.isMonthly) {
-    switchToDailyView();
-  } else {
-    switchToMonthlyView();
+const monthKey = (year: number, month: number) => `${year}-${month}`;
+const isYearExpanded = (year: number) => expandedYears.value.includes(year);
+const isMonthExpanded = (year: number, month: number) => expandedMonths.value.includes(monthKey(year, month));
+const isYearSelected = (year: number) => libConfig.calendar.year === year && libConfig.calendar.month === -1;
+const isMonthSelected = (year: number, month: number) =>
+  libConfig.calendar.year === year && libConfig.calendar.month === month && libConfig.calendar.date === -1;
+const isDaySelected = (year: number, month: number, day: number) =>
+  libConfig.calendar.year === year && libConfig.calendar.month === month && libConfig.calendar.date === day;
+
+function toggleYear(year: number) {
+  expandedYears.value = isYearExpanded(year)
+    ? expandedYears.value.filter(value => value !== year)
+    : [...expandedYears.value, year];
+}
+
+function toggleMonth(year: number, month: number) {
+  const key = monthKey(year, month);
+  expandedMonths.value = isMonthExpanded(year, month)
+    ? expandedMonths.value.filter(value => value !== key)
+    : [...expandedMonths.value, key];
+}
+
+function selectYear(year: number) {
+  libConfig.calendar.year = year;
+  libConfig.calendar.month = -1;
+  libConfig.calendar.date = -1;
+  if (!isYearExpanded(year)) toggleYear(year);
+}
+
+function selectMonth(year: number, month: number) {
+  libConfig.calendar.year = year;
+  libConfig.calendar.month = month;
+  libConfig.calendar.date = -1;
+  if (!isMonthExpanded(year, month)) toggleMonth(year, month);
+}
+
+function selectDay(year: number, month: number, day: number) {
+  libConfig.calendar.year = year;
+  libConfig.calendar.month = month;
+  libConfig.calendar.date = day;
+}
+
+function formatMonth(_year: number, month: number) {
+  return localeMsg.value.calendar.months_long?.[month - 1]
+    || localeMsg.value.calendar.months?.[month - 1]
+    || String(month);
+}
+
+function formatDay(_year: number, _month: number, day: number) {
+  return String(day);
+}
+
+function expandSelectedCalendarPath() {
+  const year = Number(libConfig.calendar.year);
+  const month = Number(libConfig.calendar.month);
+  if (!Number.isFinite(year) || !calendar_dates.value[year]) return;
+
+  if (!isYearExpanded(year)) expandedYears.value = [...expandedYears.value, year];
+  if (month > 0 && calendar_dates.value[year][month] && !isMonthExpanded(year, month)) {
+    expandedMonths.value = [...expandedMonths.value, monthKey(year, month)];
   }
 }
 
 /// fetch calendar dates
 async function getCalendarDates() {
+  const requestVersion = ++calendarRequestVersion;
+  const libraryId = libConfig._libraryId;
   isLoading.value = true;
   try {
     const taken_dates = await getTakenDates(config.settings.calendarSort);
+    if (!isCalendarMounted || requestVersion !== calendarRequestVersion || libraryId !== libConfig._libraryId) return;
     if (taken_dates) {
       calendar_dates.value = transformArray(taken_dates);
+      validateCalendarSelection();
+      if (calendarView.value === 'years') expandSelectedCalendarPath();
     }
   } finally {
-    isLoading.value = false;
+    if (isCalendarMounted && requestVersion === calendarRequestVersion) {
+      isLoading.value = false;
+    }
+  }
+}
+
+function validateCalendarSelection() {
+  const year = libConfig.calendar.year;
+  const month = libConfig.calendar.month;
+  const date = libConfig.calendar.date;
+
+  if (year === null || year === undefined) return;
+  const months = calendar_dates.value[year];
+  const isSelectedDateVisible = months
+    && (month === -1 || (months[month!] && (date === -1 || months[month!].some(item => item.date === date))));
+
+  if (!isSelectedDateVisible) {
+    libConfig.calendar.year = null;
+    libConfig.calendar.month = null;
+    libConfig.calendar.date = null;
   }
 }
 
@@ -265,10 +438,5 @@ function transformArray(dates: [string, number][]): CalendarDates {
 
   return result;
 }
-
-defineExpose({
-  switchToMonthlyView,
-  switchToDailyView,
-});
 
 </script>

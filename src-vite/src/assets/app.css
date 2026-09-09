@@ -500,11 +500,11 @@ html, body {
 }
 
 @utility sidebar-header-tabs {
-  @apply tabs tabs-sm flex-1 flex-nowrap items-center;
+  @apply tabs tabs-sm flex-1 flex-nowrap items-center gap-3;
 }
 
 @utility sidebar-header-tab {
-  @apply tab whitespace-nowrap;
+  @apply tab h-10 px-0 min-w-0 whitespace-nowrap font-bold uppercase text-xs tracking-wide leading-none;
 }
 
 .sidebar-header-tab.tab-active {
@@ -897,4 +897,27 @@ html, body {
   box-shadow:
     inset 0 1px 0 color-mix(in srgb, white 8%, transparent),
     -8px 0 32px -12px oklch(10% 0.05 265 / 0.45);
+}
+
+.photo-map-view .leaflet-control-scale {
+  margin: 0 0 10px 10px;
+}
+
+.photo-map-view .leaflet-control-scale-line {
+  border: 1px solid color-mix(in srgb, var(--color-base-content) 45%, transparent);
+  border-radius: var(--radius-box);
+  background: color-mix(in srgb, var(--color-base-100) 72%, transparent);
+  color: var(--color-base-content);
+  text-shadow: none;
+  backdrop-filter: blur(6px);
+}
+
+/* Trigger Chromium to composite map tiles consistently without resizing them. */
+.photo-map-view .leaflet-tile,
+.file-info-map-view .leaflet-tile {
+  outline: 1px solid transparent;
+}
+
+.leaflet-container {
+  background: transparent !important;
 }

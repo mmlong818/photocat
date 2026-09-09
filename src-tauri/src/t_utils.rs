@@ -5,11 +5,13 @@
  * date:    2024-08-08
  */
 use crate::t_common;
+use crate::t_apple_sidecar;
 use crate::t_sqlite::{AFile, AFolder, AThumb, Album, FolderScanState, FolderSubfolderState};
 use chrono::{DateTime, Local, TimeZone, Utc};
 use once_cell::sync::Lazy;
 use pinyin::ToPinyin;
 use rstar::{AABB, PointDistance, RTree, RTreeObject};
+use serde::Serialize;
 use std::collections::{HashMap, HashSet};
 use std::fs;
 use std::io::Read;
@@ -1272,6 +1274,166 @@ pub fn import_file(source_path: &str, dest_folder: &str) -> Option<String> {
     }
 }
 
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportOrganizeProgress {
+    pub phase: String,
+    pub current_path: Option<String>,
+    pub processed: usize,
+    pub total: usize,
+    pub imported: usize,
+    pub failed: usize,
+    pub cancelled: bool,
+}
+
+#[derive(Debug, Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct ImportOrganizeResult {
+    pub total: usize,
+    pub imported: usize,
+    pub failed: usize,
+    pub cancelled: bool,
+}
+
+/// Copy supported media from a source folder into a folder in an album and
+/// create the corresponding folder/file records. `layout` is day, month, year,
+/// or none.
+pub fn import_and_organize<F, C>(
+    album_id: i64,
+    source_path: &str,
+    destination_path: &str,
+    layout: &str,
+    mut report_progress: F,
+    is_cancelled: C,
+) -> Result<ImportOrganizeResult, String>
+where
+    F: FnMut(ImportOrganizeProgress),
+    C: Fn() -> bool,
+{
+    let album = Album::get_album_by_id(album_id)?;
+    let source = fs::canonicalize(source_path)
+        .map_err(|e| format!("Cannot access source folder: {}", e))?;
+    if !source.is_dir() {
+        return Err("The import source must be a folder".to_string());
+    }
+    let album_root = fs::canonicalize(&album.path)
+        .map_err(|e| format!("Cannot access album folder: {}", e))?;
+    let destination_folder = fs::canonicalize(destination_path)
+        .map_err(|e| format!("Cannot access destination folder: {}", e))?;
+    if !destination_folder.starts_with(&album_root) {
+        return Err("The destination folder must be inside the album".to_string());
+    }
+    if source == destination_folder
+        || destination_folder.starts_with(&source)
+        || source.starts_with(&destination_folder)
+    {
+        return Err(
+            "The import source and destination folders cannot contain one another".to_string(),
+        );
+    }
+    let destination_components = destination_folder
+        .strip_prefix(&album_root)
+        .map_err(|_| "The destination folder must be inside the album".to_string())?
+        .components()
+        .map(|component| component.as_os_str().to_string_lossy().to_string())
+        .collect::<Vec<_>>();
+
+    report_progress(ImportOrganizeProgress {
+        phase: "preparing".to_string(), current_path: None, processed: 0, total: 0,
+        imported: 0, failed: 0, cancelled: false,
+    });
+    let mut files = Vec::new();
+    for entry in WalkDir::new(&source)
+        .into_iter()
+        .filter_entry(is_visible_or_root)
+    {
+        if is_cancelled() {
+            report_progress(ImportOrganizeProgress {
+                phase: "preparing".to_string(), current_path: None, processed: 0, total: files.len(),
+                imported: 0, failed: 0, cancelled: true,
+            });
+            return Ok(ImportOrganizeResult { total: files.len(), imported: 0, failed: 0, cancelled: true });
+        }
+        let Ok(entry) = entry else { continue; };
+        if !entry.file_type().is_file() { continue; }
+        let path = entry.into_path();
+        if let Some(file_type) = get_file_type(&path.to_string_lossy()) {
+            files.push((path, file_type));
+        }
+    }
+    let total = files.len();
+    let mut imported = 0;
+    let mut failed = 0;
+
+    for (processed, (path, file_type)) in files.into_iter().enumerate() {
+        if is_cancelled() {
+            report_progress(ImportOrganizeProgress {
+                phase: "importing".to_string(), current_path: None, processed, total, imported, failed, cancelled: true,
+            });
+            return Ok(ImportOrganizeResult { total, imported, failed, cancelled: true });
+        }
+
+        let path_string = path.to_string_lossy().to_string();
+        let result = (|| -> Result<String, String> {
+            let timestamp = AFile::capture_timestamp_for_path(&path_string, file_type)?;
+            let date = Local.timestamp_opt(timestamp, 0).single()
+                .ok_or_else(|| format!("Invalid capture date: {}", path_string))?;
+            let relative_folder = match layout {
+                "day" => date.format("%Y/%Y-%m-%d").to_string(),
+                "month" => date.format("%Y/%Y-%m").to_string(),
+                "year" => date.format("%Y").to_string(),
+                "none" => String::new(),
+                _ => return Err("Invalid import folder layout".to_string()),
+            };
+            let target_folder = destination_folder.join(&relative_folder);
+            fs::create_dir_all(&target_folder).map_err(|e| format!("Cannot create destination folder: {}", e))?;
+            let mut folder = AFolder::add_to_db(album_id, &album_root.to_string_lossy())?;
+            for component in destination_components.iter().map(String::as_str)
+                .chain(relative_folder.split('/').filter(|component| !component.is_empty()))
+            {
+                let parent = Path::new(&folder.path).join(component);
+                folder = AFolder::add_to_db(album_id, &parent.to_string_lossy())?;
+            }
+            let destination = import_file(&path_string, &target_folder.to_string_lossy())
+                .ok_or_else(|| format!("Failed to copy file: {}", path_string))?;
+            let copied_sidecars = match t_apple_sidecar::copy_apple_aae_sidecars_for_import(
+                &path_string,
+                &destination,
+            ) {
+                Ok(sidecars) => sidecars,
+                Err(error) => {
+                    let _ = fs::remove_file(&destination);
+                    return Err(error);
+                }
+            };
+            let folder_id = folder.id.ok_or_else(|| "Imported folder is missing its database id".to_string())?;
+            if let Err(error) = AFile::add_to_db(folder_id, &destination, file_type, chrono::Utc::now().timestamp_millis()) {
+                let _ = fs::remove_file(&destination);
+                for sidecar in copied_sidecars {
+                    let _ = fs::remove_file(sidecar);
+                }
+                return Err(error);
+            }
+            Ok(destination)
+        })();
+        let current_path = match result {
+            Ok(destination) => {
+                imported += 1;
+                destination
+            }
+            Err(_) => {
+                failed += 1;
+                path_string.clone()
+            }
+        };
+        report_progress(ImportOrganizeProgress {
+            phase: "importing".to_string(), current_path: Some(current_path), processed: processed + 1, total, imported, failed, cancelled: false,
+        });
+    }
+
+    Ok(ImportOrganizeResult { total, imported, failed, cancelled: false })
+}
+
 /// Map an image MIME type to the canonical file extension.
 /// Returns `None` for unsupported formats so callers can reject them
 /// before writing a file.
@@ -1666,6 +1828,7 @@ struct SyncedFileTask {
     file_type: i64,
     orientation: i32,
     album_id: i64,
+    invalidate_thumbnail: bool,
 }
 
 #[derive(Default)]
@@ -1688,6 +1851,8 @@ fn is_path_not_found(err: &str) -> bool {
 /// starts the previous one is cancelled (its generation is invalidated).
 static FOLDER_SYNC_GENERATION: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 static ACTIVE_ALBUM_SCANS: Lazy<Mutex<HashSet<i64>>> = Lazy::new(|| Mutex::new(HashSet::new()));
+static INACCESSIBLE_ALBUM_IDS: Lazy<Mutex<HashSet<i64>>> =
+    Lazy::new(|| Mutex::new(HashSet::new()));
 static ALBUM_SYNC_LOCKS: Lazy<Mutex<HashMap<i64, Arc<Mutex<()>>>>> =
     Lazy::new(|| Mutex::new(HashMap::new()));
 
@@ -1959,6 +2124,7 @@ fn sync_dirty_folders_by_mtime(
 
 struct ChildFolderScan {
     folders: Vec<AFolder>,
+    child_paths: Vec<String>,
     has_subfolders: bool,
     deleted_folder_count: u32,
     folder_path_migrations: Vec<FolderPathMigration>,
@@ -2015,8 +2181,7 @@ fn scan_new_child_folders(
 
     // The background mtime sync visits every known folder but preserves
     // missing paths. Avoid loading every album path once per dirty folder;
-    // reconciliation is needed only for an explicit foreground refresh of
-    // the selected folder.
+    // reconciliation is needed only for an explicit subfolder refresh.
     let deleted_folder_count = if reconcile_removed_children {
         AFolder::delete_unseen_direct_children(album_id, folder_path, &seen_paths)? as u32
     } else {
@@ -2025,6 +2190,7 @@ fn scan_new_child_folders(
 
     Ok(ChildFolderScan {
         folders: new_folders,
+        child_paths: seen_paths.into_iter().collect(),
         has_subfolders,
         deleted_folder_count,
         folder_path_migrations,
@@ -2142,6 +2308,7 @@ fn sync_folder_direct_files(
                             file_type: ftype,
                             orientation: updated_file.e_orientation.unwrap_or(1) as i32,
                             album_id,
+                            invalidate_thumbnail: false,
                         });
                     }
                 }
@@ -2170,6 +2337,7 @@ fn sync_folder_direct_files(
                                     file_type: ftype,
                                     orientation: file.e_orientation.unwrap_or(1) as i32,
                                     album_id,
+                                    invalidate_thumbnail: status == 2,
                                 });
                             }
                         }
@@ -2348,7 +2516,7 @@ fn reconcile_raw_jpeg_pairs_after_album_index(
     Ok(())
 }
 
-/// Sync a single folder if its directory mtime has changed or reconciliation is requested.
+/// Sync a single folder when its directory mtime has changed.
 /// Returns counts and schedules thumbnail/embedding generation.
 pub fn sync_single_folder(
     app_handle: &tauri::AppHandle,
@@ -2356,7 +2524,6 @@ pub fn sync_single_folder(
     folder_id: i64,
     folder_path: &str,
     group_raw_jpeg_pairs: bool,
-    reconcile_missing: bool,
 ) -> Result<FolderMtimeSyncResult, String> {
     // A complete album scan owns folder and file reconciliation for this
     // album. Skip foreground refreshes until it finishes to avoid concurrent
@@ -2416,10 +2583,9 @@ pub fn sync_single_folder(
         ));
     }
 
-    // Reconcile direct children even when the mtime is unchanged. A manual
-    // refresh must remove a deleted child from the database, and some
-    // filesystems expose directory mtimes at a coarser resolution.
-    let child_scan = scan_new_child_folders(album_id, folder_path, reconcile_missing)?;
+    // Always reconcile direct child additions before deciding whether file
+    // metadata needs an mtime-driven update.
+    let child_scan = scan_new_child_folders(album_id, folder_path, false)?;
     let new_folder_count = child_scan.folders.len() as u32;
 
     let needs_live_photo_reindex = FolderScanState::needs_version(
@@ -2427,7 +2593,7 @@ pub fn sync_single_folder(
         FolderScanState::LIVE_PHOTO_PAIRING,
         FolderScanState::LIVE_PHOTO_PAIRING_VERSION,
     )?;
-    if info.modified == folder.modified_at && !needs_live_photo_reindex && !reconcile_missing {
+    if info.modified == folder.modified_at && !needs_live_photo_reindex {
         // An unchanged mtime-driven sync still reconciles the existing pair state.
         // This is intentionally the only incremental path that receives the
         // setting; changing Settings alone does not mutate the database.
@@ -2496,6 +2662,49 @@ pub fn sync_single_folder(
     })
 }
 
+/// Recursively reconcile the folder hierarchy below `folder_path` without
+/// enumerating or updating any file records.
+pub fn refresh_album_subfolders(
+    album_id: i64,
+    folder_path: &str,
+) -> Result<Vec<FolderPathMigration>, String> {
+    if album_scan_active(album_id) {
+        return Err("Album scan is already in progress.".to_string());
+    }
+    if album_removal_pending(album_id) {
+        return Err("Album is being removed.".to_string());
+    }
+
+    let album_sync_lock = album_sync_lock(album_id);
+    let _album_sync_guard = album_sync_lock
+        .lock()
+        .map_err(|_| format!("Album sync lock poisoned: {album_id}"))?;
+    if album_scan_active(album_id) || album_removal_pending(album_id) {
+        return Err("Album is unavailable for subfolder refresh.".to_string());
+    }
+
+    let folder = AFolder::fetch(folder_path)?
+        .ok_or_else(|| format!("Folder not found: {folder_path}"))?;
+    if folder.album_id != album_id {
+        return Err(format!("Folder does not belong to album: {folder_path}"));
+    }
+    if !directory_accessible(folder_path) {
+        return Err(format!("Folder is not accessible: {folder_path}"));
+    }
+
+    let mut pending = vec![folder_path.to_string()];
+    let mut migrations = Vec::new();
+    let mut subfolder_flags = Vec::new();
+    while let Some(path) = pending.pop() {
+        let scan = scan_new_child_folders(album_id, &path, true)?;
+        migrations.extend(scan.folder_path_migrations);
+        subfolder_flags.push((path, scan.has_subfolders));
+        pending.extend(scan.child_paths);
+    }
+    FolderSubfolderState::update_subfolder_flags(album_id, &subfolder_flags)?;
+    Ok(migrations)
+}
+
 fn should_process_synced_file(file: &AFile, file_type: i64) -> bool {
     if !file.has_thumbnail.unwrap_or(false) {
         return true;
@@ -2529,6 +2738,7 @@ fn schedule_synced_file_processing(app_handle: tauri::AppHandle, task: SyncedFil
                 orientation,
                 FOLDER_SYNC_THUMBNAIL_SIZE,
                 false,
+                false,
                 None,
                 None,
             )
@@ -2544,6 +2754,7 @@ fn schedule_synced_file_processing(app_handle: tauri::AppHandle, task: SyncedFil
             serde_json::json!({
                 "album_id": task.album_id,
                 "file_ids": [task.file_id],
+                "invalidate": task.invalidate_thumbnail,
             }),
         );
 
@@ -2947,6 +3158,46 @@ struct FinishedPayload {
 struct ThumbnailReadyPayload {
     album_id: i64,
     file_ids: Vec<i64>,
+    invalidate: bool,
+}
+
+pub fn inaccessible_album_ids() -> Vec<i64> {
+    INACCESSIBLE_ALBUM_IDS.lock().unwrap().iter().copied().collect()
+}
+
+pub fn refresh_album_accessibility(album: &mut Album) {
+    album.is_accessible = directory_accessible(&album.path);
+    if let Some(album_id) = album.id {
+        let mut inaccessible = INACCESSIBLE_ALBUM_IDS.lock().unwrap();
+        if album.is_accessible {
+            inaccessible.remove(&album_id);
+        } else {
+            inaccessible.insert(album_id);
+        }
+    }
+}
+
+pub fn apply_album_accessibility(album: &mut Album) {
+    album.is_accessible = album
+        .id
+        .is_none_or(|album_id| !INACCESSIBLE_ALBUM_IDS.lock().unwrap().contains(&album_id));
+}
+
+pub fn refresh_all_album_accessibility(albums: &mut [Album]) {
+    let mut inaccessible = HashSet::new();
+    for album in albums {
+        album.is_accessible = directory_accessible(&album.path);
+        if !album.is_accessible {
+            if let Some(album_id) = album.id {
+                inaccessible.insert(album_id);
+            }
+        }
+    }
+    *INACCESSIBLE_ALBUM_IDS.lock().unwrap() = inaccessible;
+}
+
+pub fn clear_album_accessibility() {
+    INACCESSIBLE_ALBUM_IDS.lock().unwrap().clear();
 }
 
 #[derive(serde::Serialize, serde::Deserialize, Clone, Default)]
@@ -3009,6 +3260,7 @@ struct ThumbnailTask {
     file_type: i64,
     orientation: i32,
     thumbnail_size: u32,
+    prefer_embedded_raw_thumbnail: bool,
     file_size: u64,
     duration: Option<u64>,
     is_heavy: bool,
@@ -3218,6 +3470,7 @@ fn index_single_file(
     path_str: &str,
     ftype: i64,
     thumbnail_size: u32,
+    prefer_embedded_raw_thumbnail: bool,
     last_scan_time: i64,
 ) -> Option<FileIndexOutcome> {
     let result = panic::catch_unwind(AssertUnwindSafe(|| {
@@ -3235,7 +3488,11 @@ fn index_single_file(
                     if let Some(file_id) = file.id {
                         let has_thumbnail = file.has_thumbnail.unwrap_or(false);
                         let needs_thumbnail_regeneration = has_thumbnail
-                            && crate::t_sqlite::AThumb::needs_size_regeneration(file_id, thumbnail_size);
+                            && crate::t_sqlite::AThumb::needs_thumbnail_regeneration(
+                                file_id,
+                                thumbnail_size,
+                                prefer_embedded_raw_thumbnail,
+                            );
                         let thumbnail_ready = has_thumbnail && !needs_thumbnail_regeneration;
                         let has_embedding = file.has_embedding.unwrap_or(false);
                         let processed_immediately = thumbnail_ready;
@@ -3258,6 +3515,7 @@ fn index_single_file(
                                 file_type: ftype,
                                 orientation: file.e_orientation.unwrap_or(1) as i32,
                                 thumbnail_size,
+                                prefer_embedded_raw_thumbnail,
                                 file_size: file.size.max(0) as u64,
                                 duration: file.duration.map(|d| d as u64),
                                 is_heavy: should_use_heavy_lane(
@@ -3325,6 +3583,7 @@ async fn process_thumbnail_task(
             task_for_thumb.file_type,
             task_for_thumb.orientation,
             task_for_thumb.thumbnail_size,
+            task_for_thumb.prefer_embedded_raw_thumbnail,
             task_for_thumb.force_regenerate,
             task_for_thumb.duration,
             None,
@@ -3355,6 +3614,7 @@ async fn process_thumbnail_task(
         ThumbnailReadyPayload {
             album_id: with_progress_tracker(&tracker, |tracker| tracker.album_id),
             file_ids: vec![task.file_id],
+            invalidate: task.force_regenerate,
         },
     );
 
@@ -3412,6 +3672,7 @@ pub async fn index_album_worker(
     cancellation_token: Arc<Mutex<HashMap<i64, bool>>>,
     album_id: i64,
     thumbnail_size: u32,
+    prefer_embedded_raw_thumbnail: bool,
     skip_file_path: Option<String>,
     group_raw_jpeg_pairs: bool,
 ) -> Result<(), String> {
@@ -3587,6 +3848,7 @@ pub async fn index_album_worker(
                     &path_str,
                     ftype,
                     thumbnail_size,
+                    prefer_embedded_raw_thumbnail,
                     current_scan_time,
                 ) {
                     let file_size = outcome

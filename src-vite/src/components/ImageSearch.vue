@@ -178,8 +178,8 @@ function handleSearchHistoryClick(index: number) {
   const item = libConfig.search.searchHistory[index];
   const searchText = typeof item === 'string' ? item : item?.text;
   if (searchText) {
-    uiStore.searchCountRequestedFor = searchText;
-    uiStore.searchCountRequestTick++;
+    libConfig.search.searchText = searchText;
+    uiStore.requestCountUpdate({ source: 'search', text: searchText });
   }
   libConfig.search.searchHistoryIndex = index;
 }
@@ -209,8 +209,6 @@ function handleSearch() {
   if (searchQuery.value.trim().length === 0) return;
   
   const query = searchQuery.value.trim();
-  uiStore.searchCountRequestedFor = query;
-  uiStore.searchCountRequestTick++;
   const history = libConfig.search.searchHistory as any[];
   
   // Find existing index considering both string and object formats
@@ -233,6 +231,7 @@ function handleSearch() {
   }
 
   libConfig.search.searchText = query;
+  uiStore.requestCountUpdate({ source: 'search', text: query });
 }
 
 function handleEscKey() {
@@ -240,8 +239,10 @@ function handleEscKey() {
 }
 
 const searchHistoryList = computed(() => libConfig.search.searchHistory as any[]);
-const getSearchHistoryCount = (item: any) => Number(item?.count || 0);
-const hasSearchHistoryCount = (item: any) => typeof item !== 'string' && Number(item?.count || 0) > 0;
+const getSearchHistoryCount = (item: any) => {
+  return Number(typeof item === 'string' ? 0 : item?.count || 0);
+};
+const hasSearchHistoryCount = (item: any) => getSearchHistoryCount(item) > 0;
 const formatSearchResultCount = (count: number) => {
   return count.toLocaleString();
 };

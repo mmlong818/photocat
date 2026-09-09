@@ -1,5 +1,6 @@
 import { provide, inject, computed, reactive, Ref } from 'vue';
 import { libConfig } from '@/common/config';
+import { useUIStore } from '@/stores/uiStore';
 import { selectFolder as apiSelectFolder } from '@/common/api';
 import { Album, Folder, AlbumSelectionContext, ALBUM_SELECTION_KEY } from '@/common/types';
 
@@ -28,6 +29,7 @@ export function useAlbumSelectionProvider(
     source: SelectionSource,
     onExpandAndSelect?: (albumId: number, folderPath: string) => Promise<void>
 ) {
+    const uiStore = useUIStore();
     const markAlbumActivated = () => {
         if (source !== 'album') return;
         libConfig.activePane = 'main';
@@ -109,6 +111,7 @@ export function useAlbumSelectionProvider(
         folderPath.value = album.path;
         selected.value = true;
         confirmedSelection = currentSelection();
+        uiStore.requestCountUpdate({ source: 'album', id: Number(album.id || 0) });
         markAlbumActivated();
     };
 
@@ -133,6 +136,7 @@ export function useAlbumSelectionProvider(
         }
         folderPath.value = selectedPath;
         selected.value = false;
+        uiStore.requestCountUpdate({ source: 'album-folder', path: selectedPath });
 
         await new Promise<void>(resolve => {
             requestAnimationFrame(() => setTimeout(resolve, 0));

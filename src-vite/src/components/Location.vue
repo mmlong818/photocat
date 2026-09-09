@@ -58,10 +58,11 @@
 
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, onUnmounted, computed, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { config, libConfig } from '@/common/config';
 import { getLocationInfo } from '@/common/api';
+import { SIDEBAR } from '@/common/constants';
 import { getCountryName } from '@/common/utils';
 import { IconLocation, IconRight } from '@/common/icons';
 
@@ -77,12 +78,19 @@ const localeMsg = computed(() => messages.value[locale.value] as any);
 
 const locations = ref<any[]>([]);
 const isLoadingLocations = ref(true);
+let isLocationMounted = true;
+let locationRequestVersion = 0;
+
+onUnmounted(() => {
+  isLocationMounted = false;
+  locationRequestVersion++;
+});
 
 const sortedLocations = computed(() => locations.value);
 
 onMounted(async () => {
   if (locations.value.length === 0) {
-    await getLocations();
+    if (!await getLocations()) return;
 
     if (locations.value.length === 0) {
       (libConfig.location as any).cc = null;
@@ -103,8 +111,13 @@ onMounted(async () => {
   }
 });
 
-watch(() => config.settings.categorySort, async () => {
-  await getLocations();
+// Only refresh the active view. Inactive panel data is refreshed on re-entry.
+watch(() => [config.settings.categorySort, config.settings.smallFileFilter], async () => {
+  if (libConfig.activePane === 'main' && config.main.sidebarIndex === SIDEBAR.LOCATION) await getLocations();
+});
+
+watch(() => [config.main.sidebarIndex, libConfig.activePane], async () => {
+  if (libConfig.activePane === 'main' && config.main.sidebarIndex === SIDEBAR.LOCATION) await getLocations();
 });
 
 function restoreLocationSelection() {
@@ -151,9 +164,12 @@ function clickLocationName(location: any, name: string) {
 
 /// get locations from db
 async function getLocations() {
+  const requestVersion = ++locationRequestVersion;
+  const libraryId = libConfig._libraryId;
   isLoadingLocations.value = true;
   try {
     const fetchedLocations = await getLocationInfo(config.settings.categorySort);
+    if (!isLocationMounted || requestVersion !== locationRequestVersion || libraryId !== libConfig._libraryId) return false;
     if (fetchedLocations) {
       locations.value = fetchedLocations.map((location: any) => ({
         ...location,
@@ -161,8 +177,11 @@ async function getLocations() {
       }));
       restoreLocationSelection();
     }
+    return true;
   } finally {
-    isLoadingLocations.value = false;
+    if (isLocationMounted && requestVersion === locationRequestVersion) {
+      isLoadingLocations.value = false;
+    }
   }
 };
 

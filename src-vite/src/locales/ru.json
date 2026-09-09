@@ -199,6 +199,23 @@
       }
     }
   },
+  "import_organize": {
+    "source": "Исходная папка",
+    "source_placeholder": "Выберите исходную папку",
+    "choose_folder": "Выбрать папку…",
+    "destination": "Целевая папка",
+    "folder_layout": "Структура папок",
+    "layout_day": "По дням — YYYY/YYYY-MM-DD",
+    "layout_month": "По месяцам — YYYY/YYYY-MM",
+    "layout_year": "По годам — YYYY",
+    "layout_none": "Одна папка",
+    "import": "Импортировать",
+    "preparing": "Подготовка импорта",
+    "importing": "Импорт файлов",
+    "complete": "Импорт завершён",
+    "cancelled": "Импорт отменён",
+    "failed": "Ошибок: {count}"
+  },
   "welcome": {
     "title": "Добро пожаловать в 猫叔的图",
     "description": "Ваша локальная фототека. Быстрая, с поиском и всегда под вашим контролем.",
@@ -306,10 +323,11 @@
   },
   "calendar": {
     "title": "Календарь",
-    "month_title": "Месяц",
-    "day_title": "День",
-    "switch_to_month": "На месяц",
-    "switch_to_day": "На день",
+    "tabs": {
+      "years": "Годы",
+      "months": "Месяцы",
+      "days": "Дни"
+    },
     "day": "День",
     "week": "Неделя",
     "month": "Месяц",
@@ -482,6 +500,7 @@
         "building_sets": "Создание похожих групп",
         "analyzing": "Анализ похожих фотографий",
         "groups_title": "Похожие группы",
+        "results": "Результаты",
         "groups_count": "{count} похожих групп",
         "load_more": "Загрузить ещё",
         "error_title": "Не удалось загрузить похожие фотографии",
@@ -503,9 +522,12 @@
       "keep_label": "Оставить",
       "unkeep_label": "Не сохранять",
       "delete_selected": "Удалить выбранное",
+      "delete_all": "Удалить все",
       "move_selected_to_trash": "Удалить в Корзину ({count} выбрано · {size})",
+      "no_removable_files": "Нет удаляемых файлов для перемещения в Корзину",
       "set_keep": "Оставить",
-      "duplicate_files_summary": "Дубликатов: {count} ({size})"
+      "removable_copies_summary": "{count} удаляемых копий · {size}",
+      "similar_photos_summary": "{count} похожих фото · {size}"
     }
   },
   "tooltip": {
@@ -548,6 +570,14 @@
     "set_album_cover": {
       "success": "Обложка установлена",
       "failed": "Ошибка установки обложки"
+    },
+    "set_desktop_wallpaper": {
+      "success": "Обои рабочего стола обновлены",
+      "failed": "Не удалось установить обои рабочего стола"
+    },
+    "refresh_subfolders": {
+      "success": "Подпапки обновлены",
+      "failed": "Не удалось обновить подпапки"
     },
     "copy_image": {
       "success": "Скопировано файлов в буфер обмена: {count}",
@@ -605,7 +635,7 @@
       "exclude_from_search": "Исключить из поиска",
       "remove": "Удалить",
       "delete_folder": "Удалить папку",
-      "refresh": "Обновить папку"
+      "refresh_subfolders": "Обновить подпапки"
     },
     "file": {
       "new_folder": "Новая папка",
@@ -636,6 +666,8 @@
       "reveal_in_file_explorer": "Показать в Проводнике...",
       "refresh_file_info": "Обновить сведения о файле",
       "set_album_cover": "Сделать обложкой",
+      "set_as": "Установить как",
+      "set_desktop_wallpaper": "Установить как обои рабочего стола",
       "show_info": "Показать инфо",
       "remove_from_collection": "Удалить из коллекции"
     },
@@ -647,9 +679,7 @@
     },
     "camera_panel": {
       "camera_title": "Камеры",
-      "lens_title": "Объективы",
-      "switch_to_camera": "Переключить на камеры",
-      "switch_to_lens": "Переключить на объективы"
+      "lens_title": "Объективы"
     },
     "search": {
       "clear_history": "Очистить историю"
@@ -811,6 +841,7 @@
       "title": "Удаление в Корзину",
       "file_content": "Файл '{file}' будет перемещён в Корзину.",
       "files_content": "Выбранные файлы ({count} шт.) будут перемещены в Корзину.",
+      "removable_files_content": "Все {count} удаляемых файлов будут перемещены в Корзину.",
       "raw_jpeg_companions_content": "Также будут удалены {count} связанных файлов RAW+JPEG.",
       "folder_content": "Папка '{folder}' будет перемещена в Корзину.",
       "ok": "Переместить",
@@ -825,6 +856,7 @@
       "title": "Удалить безвозвратно",
       "file_content": "Файл '{file}' будет удалён безвозвратно.",
       "files_content": "Выбранные файлы ({count} шт.) будут удалены безвозвратно.",
+      "removable_files_content": "Все {count} удаляемых файлов будут удалены безвозвратно.",
       "folder_content": "Папка '{folder}' будет удалена безвозвратно.",
       "checkbox": "Удалить безвозвратно (вернуть нельзя)",
       "ok": "Удалить",
@@ -1031,7 +1063,7 @@
     "satellite": "Спутник",
     "heatmap": "Тепловая карта",
     "photo_count": "{count} фото",
-    "no_photos_in_view": "В этой области нет фото",
+    "no_photos_in_view": "Нет фотографий",
     "photos_in_view": "{count} фото в этой области",
     "photos_in_view_limited": "Показаны первые {count} фото - увеличьте масштаб для уточнения"
   },
@@ -1168,14 +1200,17 @@
       "show_status_bar": "Строка состояния",
       "auto_check_updates": "Автоматически проверять обновления"
     },
-    "library": {
-      "title": "Библиотека",
+    "browse": {
+      "title": "Обзор",
       "section_album": "Альбом",
       "show_subfolder_files": "Показывать файлы из подпапок",
       "show_subfolder_files_hint": "При просмотре папок отображаются файлы из вложенных папок",
-      "section_file_grouping": "Группировка файлов",
+      "section_file_display": "Отображение файлов",
       "group_raw_jpeg_pairs": "Группировать RAW-пары",
       "group_raw_jpeg_pairs_hint": "Показывать совпадающие файлы RAW и JPEG/HEIC как один элемент",
+      "small_file_filter": "Фильтр маленьких файлов",
+      "small_file_filter_hint": "Скрывает файлы, если ширина и высота меньше выбранного значения",
+      "small_file_filter_options": ["Выключено", "160 px", "320 px", "640 px"],
       "section_sorting": "Сортировка",
       "folder_sort": "Папки",
       "folder_sort_hint": "Порядок сортировки папок, отображаемых внутри альбомов",
@@ -1204,8 +1239,8 @@
         "Количество (убыв.)"
       ]
     },
-    "browse": {
-      "title": "Обзор",
+    "grid": {
+      "title": "Сетка",
       "section_grid": "Сетка",
       "section_open": "Открытие",
       "dbl_click_thumbnail": "Дважды щёлкните миниатюру",
@@ -1416,9 +1451,27 @@
       "title": "Дополнительно",
       "section_thumbnail_cache": "Кэш миниатюр",
       "thumbnail_quality": "Качество миниатюр",
-      "thumbnail_quality_hint": "Задаёт разрешение создаваемых миниатюр. При более высоких настройках они выглядят чётче, но создаются дольше и занимают больше места на диске.",
+      "thumbnail_quality_hint": "Задаёт разрешение создаваемых миниатюр. При более высоких настройках они выглядят чётче, но создаются дольше и занимают больше места на диске",
+      "raw_thumbnail_source": "Источник миниатюр RAW",
+      "raw_thumbnail_source_hint": "Выберите способ создания миниатюр для RAW-файлов",
+      "raw_thumbnail_source_options": [
+        "Рендеринг RAW (по умолчанию)",
+        "Встроенный предпросмотр (быстрее)"
+      ],
+      "section_map": "Карта",
+      "map_provider": "Поставщик карт",
+      "map_provider_hint": "Выберите картографический сервис для просмотра карты",
+      "map_provider_options": [
+        "Глобальный (по умолчанию)",
+        "Китай (Tianditu)"
+      ],
+      "tianditu_token": "Токен API Tianditu",
+      "tianditu_token_hint": "Требуется для тайлов Tianditu",
+      "tianditu_token_placeholder": "Вставьте токен",
+      "tianditu_token_status_saved": "Сохранено",
+      "tianditu_token_status_empty": "Не настроено",
       "clean_unused_thumbnails": "Очистить неиспользуемый кэш миниатюр",
-      "clean_unused_thumbnails_hint": "Удаляет кэшированные миниатюры, которые больше не связаны с файлами в этой библиотеке.",
+      "clean_unused_thumbnails_hint": "Удаляет кэшированные миниатюры, которые больше не связаны с файлами в этой библиотеке",
       "clean": "Очистить",
       "thumbnail_cache_cleaned": "Удалено миниатюр: {count}; освобождено: {size}.",
       "thumbnail_quality_options": [
@@ -1484,7 +1537,7 @@
       "beta_hint": "Бета: пока в разработке",
       "similarity": "Сходство лиц",
       "cluster_threshold": "Порог кластеризации",
-      "cluster_threshold_hint": "Выше = строже, больше людей. Ниже = мягче, может объединять разных людей.",
+      "cluster_threshold_hint": "Выше = строже, больше людей. Ниже = мягче, может объединять разных людей",
       "cluster_threshold_options": [
         "Очень высокое",
         "Высокое",

@@ -231,7 +231,7 @@ const libraryEmpty = ref(false);
 
 const checkLibraryEmpty = async () => {
   try {
-    const albums = await invoke<any[]>('get_all_albums');
+    const albums = await invoke<any[]>('get_all_albums', { refreshAccessibility: false });
     libraryEmpty.value = (albums?.length ?? 0) === 0;
     if (libraryEmpty.value) {
       config.main.sidebarIndex = SIDEBAR.ALBUM;

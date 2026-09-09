@@ -106,13 +106,13 @@
           />
           <span v-else class="sidebar-item-label">{{ collection.name }}</span>
           <span
-            v-if="renamingId !== collection.id && collection.count > 0"
+            v-if="renamingId !== collection.id && getCollectionDisplayCount(collection) > 0"
             :class="[
               'sidebar-item-count ml-auto',
               selectedId === collection.id ? 'hidden' : 'group-hover:hidden',
             ]"
           >
-            {{ collection.count.toLocaleString() }}
+            {{ getCollectionDisplayCount(collection).toLocaleString() }}
           </span>
           <div
             v-if="renamingId !== collection.id"
@@ -169,7 +169,7 @@ import { emit as tauriEmit, listen } from '@tauri-apps/api/event';
 import { useI18n } from 'vue-i18n';
 import { useUIStore } from '@/stores/uiStore';
 import { config, libConfig } from '@/common/config';
-import { clearCollection, createCollection, deleteCollection as deleteCollectionApi, listCollections, renameCollection, reorderCollections } from '@/common/api';
+import { clearCollection, createCollection, deleteCollection as deleteCollectionApi, getCollectionCounts, listCollections, renameCollection, reorderCollections } from '@/common/api';
 import { IconAdd, IconRight, IconEdit, IconMore, IconBookmark, IconRemove, IconTrash, IconClose, IconSearch, IconDragHandle, IconOrder } from '@/common/icons';
 import { VueDraggable } from 'vue-draggable-plus';
 import ContextMenu from '@/components/ContextMenu.vue';
@@ -190,8 +190,8 @@ const uiStore = useUIStore();
 type Collection = {
   id: number;
   name: string;
-  count: number;
   sortOrder?: number;
+  count: number;
 };
 
 const collections = ref<Collection[]>([]);
@@ -208,7 +208,14 @@ const filteredCollections = computed(() => {
 watch(() => collections.value.length, (count) => {
   if (count <= 10) searchQuery.value = '';
 });
+watch(() => config.settings.smallFileFilter, () => {
+  if (libConfig.activePane === 'collection') void loadCollections();
+});
+watch(() => libConfig.activePane, () => {
+  if (libConfig.activePane === 'collection') void loadCollections();
+});
 const selectedId = ref<number | null>(Number(libConfig.collection.selectedId || 0) || null);
+const getCollectionDisplayCount = (collection: Collection) => Number(libConfig.collection.counts?.[String(collection.id)] || 0);
 const reorderingCollectionId = ref<number | null>(null);
 const renamingId = ref<number | null>(null);
 const renameValue = ref('');
@@ -220,6 +227,8 @@ let unlistenCollectionFilesDropped: (() => void) | null = null;
 let unlistenCollectionsChanged: (() => void) | null = null;
 let unlistenContentItemsDragState: (() => void) | null = null;
 let unlistenLibrarySwitched: (() => void) | null = null;
+let collectionCountRequest = 0;
+let isCollectionTrayMounted = true;
 
 onMounted(async () => {
   document.addEventListener('pointerdown', handleReorderOutsidePointerDown, true);
@@ -248,6 +257,8 @@ onMounted(async () => {
 });
 
 onBeforeUnmount(() => {
+  isCollectionTrayMounted = false;
+  collectionCountRequest++;
   document.removeEventListener('pointerdown', handleReorderOutsidePointerDown, true);
   uiStore.removeInputHandler('CollectionTrayDrag');
   unlistenCollectionFilesDropped?.();
@@ -261,13 +272,27 @@ onBeforeUnmount(() => {
 });
 
 async function loadCollections(preferredId?: number) {
-  const result = await listCollections();
+  const request = ++collectionCountRequest;
+  const libraryId = libConfig._libraryId;
+  const smallFileFilter = Number(config.settings.smallFileFilter || 0);
+  const [result, counts] = await Promise.all([
+    listCollections(),
+    getCollectionCounts(smallFileFilter),
+  ]);
+  if (
+    !isCollectionTrayMounted
+    || request !== collectionCountRequest
+    || libraryId !== libConfig._libraryId
+    || smallFileFilter !== Number(config.settings.smallFileFilter || 0)
+  ) return;
+  const countMap = counts || {};
+  libConfig.collection.counts = countMap;
   collections.value = Array.isArray(result)
     ? result.map((item: any) => ({
       id: Number(item.id),
       name: String(item.name || ''),
-      count: Number(item.count || 0),
       sortOrder: Number(item.sortOrder || 0),
+      count: Number(countMap[String(item.id)] || 0),
     }))
     : [];
 
@@ -286,6 +311,8 @@ function selectCollection(collection: Collection) {
   libConfig.activePane = 'collection';
   selectedId.value = collection.id;
   libConfig.collection.selectedId = collection.id;
+  uiStore.requestCountUpdate({ source: 'collection', id: Number(collection.id) });
+  libConfig.collection.activateTick = Number(libConfig.collection.activateTick || 0) + 1;
 }
 
 async function addCollection() {
@@ -372,7 +399,6 @@ function collectionMenuItems(collection: Collection) {
     },
     {
       label: t('collection.clear'),
-      disabled: collection.count === 0,
       action: () => { clearTarget.value = collection; },
     },
     { label: "-", action: null },

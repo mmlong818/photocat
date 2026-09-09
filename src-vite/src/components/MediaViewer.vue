@@ -229,7 +229,6 @@
       />
       <IconClose 
         class="p-3 w-12 h-10 text-base-content/70 hover:text-base-content hover:bg-red-500 transition-colors duration-300 cursor-pointer" 
-        @mousedown.stop="$emit('close')"
         @click.stop="$emit('close')" 
       />
     </div>

@@ -175,15 +175,16 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref, onMounted, onBeforeUnmount } from 'vue';
+import { computed, onMounted, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
-import { listen } from '@tauri-apps/api/event';
 import { config, libConfig } from '@/common/config';
-import { CULLING, LIB_ITEM, RATE, type LibItem } from '@/common/constants';
+import { useUIStore } from '@/stores/uiStore';
+import { createEmptyLibraryCounts } from '@/stores/libraryStore';
+import { CULLING, LIB_ITEM, RATE, SIDEBAR, type LibItem } from '@/common/constants';
 
 import { IconFiles, IconHeartFilled, IconRight, IconBolt, IconFlag, IconFlagFilled, IconFlagOff, IconStar, IconStarFilled, IconHistory } from '@/common/icons';
-import { getQueryCountAndSum, getTotalCountAndSum } from '@/common/api';
 import { SMART_TAG_CATEGORIES } from '@/common/smartTags';
+import { getLibraryVisibleCounts } from '@/common/api';
 
 const props = defineProps({
   titlebar: {
@@ -194,53 +195,43 @@ const props = defineProps({
 
 const { locale, messages } = useI18n();
 const localeMsg = computed(() => messages.value[locale.value] as any);
-const totalCount = ref(0);
-const favoriteCount = ref(0);
-const todayCount = ref(0);
-const unratedCount = ref(0);
-const ratedCountOverride = ref<number | null>(null);
-let unlistenLibraryItemCount: (() => void) | null = null;
-let unlistenCullingStatus: (() => void) | null = null;
-const cullingCounts = ref<Record<string, number>>({
-  [CULLING.PICK]: 0,
-  [CULLING.REJECT]: 0,
-  [CULLING.UNREVIEWED]: 0,
+const uiStore = useUIStore();
+const libraryCounts = computed(() => libConfig.library.counts || createEmptyLibraryCounts());
+const subjectCounts = computed(() => libConfig.library.subjectCounts || {});
+const totalCount = computed(() => Number(libraryCounts.value.all || 0));
+const favoriteCount = computed(() => Number(libraryCounts.value.favorite || 0));
+const todayCount = computed(() => Number(libraryCounts.value.today || 0));
+const unratedCount = computed(() => Number(libraryCounts.value.unrated || 0));
+const ratedCount = computed(() => Number(libraryCounts.value.rated || 0));
+const cullingCounts = computed(() => libraryCounts.value.culling);
+const ratingCounts = computed(() => libraryCounts.value.ratings);
+let libraryCountRequest = 0;
+async function refreshLibraryCounts() {
+  const request = ++libraryCountRequest;
+  const libraryId = libConfig._libraryId;
+  const smallFileFilter = Number(config.settings.smallFileFilter || 0);
+  const counts = await getLibraryVisibleCounts(smallFileFilter);
+  if (
+    !counts
+    || request !== libraryCountRequest
+    || libraryId !== libConfig._libraryId
+    || smallFileFilter !== Number(config.settings.smallFileFilter || 0)
+  ) return;
+  libConfig.library.counts = {
+    all: counts.all, favorite: counts.favorite, today: counts.today,
+    rated: counts.rated, unrated: counts.unrated,
+    ratings: { 1: counts.rating1, 2: counts.rating2, 3: counts.rating3, 4: counts.rating4, 5: counts.rating5 },
+    culling: { [CULLING.PICK]: counts.pick, [CULLING.REJECT]: counts.reject, [CULLING.UNREVIEWED]: counts.unreviewed },
+  };
+}
+onMounted(() => { void refreshLibraryCounts(); });
+const isActiveLibraryView = () => libConfig.activePane === 'main' && config.main.sidebarIndex === SIDEBAR.LIBRARY;
+watch(() => config.settings.smallFileFilter, () => {
+  if (isActiveLibraryView()) void refreshLibraryCounts();
 });
-const ratingCounts = ref<Record<number, number>>({
-  1: 0,
-  2: 0,
-  3: 0,
-  4: 0,
-  5: 0,
+watch(() => [config.main.sidebarIndex, libConfig.activePane], () => {
+  if (isActiveLibraryView()) void refreshLibraryCounts();
 });
-const ratedCount = computed(() =>
-  ratedCountOverride.value
-  ?? Object.values(ratingCounts.value).reduce((sum, count) => sum + count, 0)
-);
-
-const buildQueryParams = ({ isFavorite = false, rating = RATE.NONE, cullingFlag = -1, startDate = 0, endDate = 0 } = {}) => ({
-  searchFileType: 0,
-  sortType: 0,
-  sortOrder: 0,
-  searchFileName: "",
-  searchAllSubfolders: "",
-  searchFolder: "",
-  startDate,
-  endDate,
-  calendarSort: 0,
-  make: "",
-  model: "",
-  lensMake: "",
-  lensModel: "",
-  locationAdmin1: "",
-  locationName: "",
-  isFavorite,
-  rating,
-  cullingFlag,
-  tagId: 0,
-  personId: 0,
-});
-
 const libraryItems = computed(() => [
   {
     id: LIB_ITEM.ALL,
@@ -268,7 +259,7 @@ const smartTagItems = computed(() =>
     return {
       id: item.id,
       label: localeMsg.value.subject.items?.[item.id] || item.id,
-      count: Number(libConfig.library.subjectCounts?.[item.id] || 0),
+      count: Number(subjectCounts.value[item.id] || 0),
     };
   })
 );
@@ -283,50 +274,10 @@ function formatSearchResultCount(count: number) {
   return count.toLocaleString();
 }
 
-const refreshTotalCount = async () => {
-  const result = await getTotalCountAndSum();
-  totalCount.value = result ? result[0] : 0;
-};
-
-const refreshFavoriteCount = async () => {
-  const result = await getQueryCountAndSum(buildQueryParams({ isFavorite: true }));
-  favoriteCount.value = result ? Number(result[0]) : 0;
-};
-
-const refreshTodayCount = async () => {
-  const result = await getQueryCountAndSum(buildQueryParams({ startDate: -1, endDate: -1 }));
-  todayCount.value = result ? Number(result[0]) : 0;
-};
-
-const refreshRatingCounts = async () => {
-  const unrated = await getQueryCountAndSum(buildQueryParams({ rating: 0 }));
-  unratedCount.value = unrated ? Number(unrated[0]) : 0;
-
-  const entries = await Promise.all(
-    [1, 2, 3, 4, 5].map(async (rating) => {
-      const result = await getQueryCountAndSum(buildQueryParams({ rating }));
-      return [rating, result ? Number(result[0]) : 0] as const;
-    }),
-  );
-
-  ratingCounts.value = Object.fromEntries(entries) as Record<number, number>;
-  ratedCountOverride.value = null;
-};
-
-const refreshCullingCounts = async () => {
-  const entries = await Promise.all([
-    [CULLING.PICK, 1],
-    [CULLING.REJECT, 2],
-    [CULLING.UNREVIEWED, 0],
-  ].map(async ([item, cullingFlag]) => {
-    const result = await getQueryCountAndSum(buildQueryParams({ cullingFlag }));
-    return [item, result ? Number(result[0]) : 0] as const;
-  }));
-  cullingCounts.value = Object.fromEntries(entries) as Record<string, number>;
-};
-
 function selectItem(item: LibItem) {
   libConfig.library.item = item;
+  uiStore.requestCountUpdate({ source: 'library', item });
+  libConfig.library.activateTick = Number(libConfig.library.activateTick || 0) + 1;
 }
 
 function toggleSubjects() {
@@ -370,92 +321,22 @@ function onLeave(el: Element) {
 function selectRating(rating: number) {
   libConfig.library.item = LIB_ITEM.RATINGS;
   libConfig.rating.item = rating;
+  uiStore.requestCountUpdate({ source: 'library', item: LIB_ITEM.RATINGS, rating });
+  libConfig.library.activateTick = Number(libConfig.library.activateTick || 0) + 1;
 }
 
 function selectCulling(item: string) {
   libConfig.library.item = LIB_ITEM.CULLING;
   libConfig.culling.item = item;
+  uiStore.requestCountUpdate({ source: 'library', item: LIB_ITEM.CULLING, cullingItem: item });
+  libConfig.library.activateTick = Number(libConfig.library.activateTick || 0) + 1;
 }
 
 function selectSmartTag(smartId: string) {
   libConfig.library.item = LIB_ITEM.SUBJECTS;
   libConfig.library.smartId = smartId;
+  uiStore.requestCountUpdate({ source: 'library', item: LIB_ITEM.SUBJECTS, smartId });
+  libConfig.library.activateTick = Number(libConfig.library.activateTick || 0) + 1;
 }
-
-const applyCountUpdate = (payload: any) => {
-    const count = Math.max(0, Number(payload?.count || 0));
-    switch (payload?.item) {
-      case LIB_ITEM.ALL:
-        totalCount.value = count;
-        break;
-      case LIB_ITEM.FAV:
-        favoriteCount.value = count;
-        break;
-      case LIB_ITEM.TODAY:
-        todayCount.value = count;
-        break;
-      case LIB_ITEM.RATINGS: {
-        const rating = Number(payload?.rating);
-        if (rating === RATE.ALL) {
-          ratedCountOverride.value = count;
-        } else if (rating === RATE.UNRATED) {
-          unratedCount.value = count;
-        } else if (rating >= 1 && rating <= 5) {
-          ratedCountOverride.value = null;
-          ratingCounts.value = { ...ratingCounts.value, [rating]: count };
-        }
-        break;
-      }
-      case LIB_ITEM.CULLING: {
-        const item = String(payload?.cullingItem || '');
-        if (Object.hasOwn(cullingCounts.value, item)) {
-          cullingCounts.value = { ...cullingCounts.value, [item]: count };
-        }
-        break;
-      }
-      case LIB_ITEM.SUBJECTS: {
-        const smartId = String(payload?.smartId || '');
-        if (smartId) {
-          const subjectCounts = libConfig.library.subjectCounts || {};
-          if (Object.hasOwn(subjectCounts, smartId) && Number(subjectCounts[smartId]) === count) break;
-          libConfig.library.subjectCounts = {
-            ...subjectCounts,
-            [smartId]: count,
-          };
-        }
-        break;
-      }
-    }
-};
-
-onMounted(async () => {
-  const pendingUpdates: any[] = [];
-  let initializing = true;
-  unlistenLibraryItemCount = await listen('library-item-count-updated', (event: any) => {
-    if (initializing) {
-      pendingUpdates.push(event.payload);
-    } else {
-      applyCountUpdate(event.payload);
-    }
-  });
-  unlistenCullingStatus = await listen('culling-status-updated', () => {
-    void refreshCullingCounts();
-  });
-
-  await Promise.all([
-    refreshTotalCount(),
-    refreshFavoriteCount(),
-    refreshTodayCount(),
-    refreshRatingCounts(),
-    refreshCullingCounts(),
-  ]);
-  initializing = false;
-  pendingUpdates.forEach(applyCountUpdate);
-});
-
-onBeforeUnmount(() => {
-  unlistenLibraryItemCount?.();
-  unlistenCullingStatus?.();
-});
 
 </script>

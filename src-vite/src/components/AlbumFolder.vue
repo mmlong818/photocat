@@ -14,8 +14,8 @@
       :class="{ 'pl-4': child.path !== rootPath }"
     >
       <div v-if="child.id != 0 || selection.folderPath.value == rootPath"
-        :data-file-drop-path="child.path"
-        :data-file-drop-album-id="albumId"
+        :data-file-drop-path="unavailable ? undefined : child.path"
+        :data-file-drop-album-id="unavailable ? undefined : albumId"
         :class="folderClass(child)"
         @click="clickFolder(albumId, child)"
         @dblclick="!isFolderFiltering && expandFolder(child)"
@@ -73,7 +73,7 @@
             >
               {{ getFolderFileCount(child.path).toLocaleString() }}
             </span>
-            <ContextMenu v-if="allowContextMenu && !isRenamingFolder && !isCreatingFolder"
+            <ContextMenu v-if="allowContextMenu && !unavailable && !isRenamingFolder && !isCreatingFolder"
               v-show="shouldShowFolderMenu(child)"
               :ref="(el: any) => { if (el) folderContextMenus[child.path] = el }"
               :iconMenu="IconMore"
@@ -89,6 +89,7 @@
         :albumId="albumId"
         :rootPath="rootPath"
         :allowContextMenu="allowContextMenu"
+        :unavailable="unavailable"
         :treeRoot="false"
         :filterVisiblePaths="filterVisiblePaths"
         :filterMatchedPaths="filterMatchedPaths"
@@ -154,7 +155,7 @@ import { isMac, shortenFilename, isValidFileName, getFolderPath, getFullPath, no
 import {
   createFolder, renameFolder, fetchFolder, getAllAlbums, moveFolder, moveFolderOutsideLibrary,
   copyFolder, checkFileExists, revealPath, deleteFolder, deleteFolderPermanently, recountAlbum, selectFolder as selectFolderInDb,
-  setFolderFavorite, setFolderSearchExcluded, hasImportableClipboard, syncAlbumFolderMtimes, refreshFolderThumbnails,
+  setFolderFavorite, setFolderSearchExcluded, hasImportableClipboard, refreshAlbumSubfolders,
 } from '@/common/api';
 import { DEFAULT_PLATFORM, getShortcutLabel } from '@/common/shortcuts';
 import { Album, Folder } from '@/common/types';
@@ -173,7 +174,7 @@ import {
   IconMore,
   IconNewFolder,
   IconRename,
-  IconMove,
+  IconFolderArrowRight,
   IconTrash,
   IconFolder,
   IconFolderOff,
@@ -196,6 +197,7 @@ const props = withDefaults(defineProps<{
   treeRoot?: boolean;       // only root tree listens to keyboard
   filterVisiblePaths?: string[];
   filterMatchedPaths?: string[];
+  unavailable?: boolean;
 }>(), {
   treeRoot: true,
 });
@@ -246,6 +248,7 @@ const folderClass = (folder: Folder) => {
       : 'hover:text-base-content hover:bg-base-100/30 border-transparent',
     folder.is_excluded_from_search ? 'text-base-content/30! hover:text-base-content/30!' : '',
     matched ? 'text-primary/70' : isFolderFiltering.value && !selected ? 'text-base-content/60' : '',
+    props.unavailable ? 'opacity-45' : '',
   ];
 };
 const shouldShowFilteredChildren = (folder: Folder) =>
@@ -368,7 +371,7 @@ const getMenuItemsForFolder = async (folder: any) => {
       children: [
         {
           label: t('menu.file.move_within_library'),
-          icon: IconMove,
+          icon: IconFolderArrowRight,
           disabled: isRoot,
           action: () => {
             showMoveTo.value = true;
@@ -401,21 +404,10 @@ const getMenuItemsForFolder = async (folder: any) => {
       action: null
     },
     {
-      label: localeMsg.value.menu.album.refresh,
+      label: localeMsg.value.menu.album.refresh_subfolders,
       icon: IconRefresh,
-      action: async () => {
-        // The context-menu target may differ from the folder currently shown
-        // in Content. Select and sync this exact folder before reloading its
-        // tree, so the filesystem and database cannot drift apart.
-        await selection.selectFolder(props.albumId, folder);
-        const folderId = Number(selection.folderId.value || 0);
-        if (folderId > 0) {
-          await refreshFolderThumbnails(props.albumId, folder.path);
-          await syncAlbumFolderMtimes(props.albumId, folderId, folder.path, true);
-        }
-        await expandFolder(folder, true);
-        await tauriEmit('refresh-content');
-      }
+      disabled: refreshingSubfolderPaths.value.has(folder.path),
+      action: () => { void refreshSubfolders(folder); }
     },
     {
       label: folder?.is_excluded_from_search ? localeMsg.value.menu.album.include_in_search : localeMsg.value.menu.album.exclude_from_search,
@@ -464,6 +456,31 @@ const toggleFolderFavorite = async (folder: Folder) => {
   if (result !== null) {
     folder.is_favorite = nextValue;
     emit('folderFavoriteChanged');
+  }
+};
+
+const refreshingSubfolderPaths = ref(new Set<string>());
+
+const refreshSubfolders = async (folder: Folder) => {
+  const paths = new Set(refreshingSubfolderPaths.value);
+  paths.add(folder.path);
+  refreshingSubfolderPaths.value = paths;
+  try {
+    await refreshAlbumSubfolders(props.albumId, folder.path);
+    const refreshed = await fetchFolder(folder.path, true, config.settings.folderSort);
+    if (refreshed) {
+      folder.has_subfolders = refreshed.has_subfolders;
+      folder.children = refreshed.children;
+      folder.is_expanded = true;
+    }
+    toast.success(localeMsg.value.tooltip.refresh_subfolders.success);
+  } catch (error) {
+    console.error('Failed to refresh subfolders:', error);
+    toast.error(localeMsg.value.tooltip.refresh_subfolders.failed);
+  } finally {
+    const nextPaths = new Set(refreshingSubfolderPaths.value);
+    nextPaths.delete(folder.path);
+    refreshingSubfolderPaths.value = nextPaths;
   }
 };
 

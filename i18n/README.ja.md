@@ -38,7 +38,8 @@ brew install --cask lap
 ## スクリーンショット
 
 <p align="center">
-  <img src="../docs/public/screenshots/Lap_0.3.0_main_1.png" alt="Lap ローカルフォトライブラリ管理 スクリーンショット" width="900">
+  <img src="../docs/public/screenshots/lap_library.png" alt="Lap のローカルフォトライブラリ管理" width="900">
+  <img src="../docs/public/screenshots/lap_map_view.png" alt="Lap のマップビュー" width="900">
 </p>
 
 ## Lapを選ぶ理由

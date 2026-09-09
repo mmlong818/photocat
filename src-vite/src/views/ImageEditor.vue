@@ -606,7 +606,13 @@ async function loadFileInfo(fileId: number) {
       file.thumbnail = getThumbUrl(file.id);
       fileInfo.value = file;
       newFileName.value = file.name?.substring(0, file.name.lastIndexOf('.')) || file.name || '';
-      const src = getPreviewUrl(file);
+      const src = getPreviewUrl(
+        file.id,
+        file.file_path,
+        false,
+        Number(file.modified_at || 0),
+        config.settings.rawThumbnailSource,
+      );
       initialImageSrc.value = typeof src === 'string' ? src : '';
     }
   } catch {
@@ -1409,7 +1415,13 @@ const initEditImage = async () => {
     void (async () => {
       try {
         if (loadingId !== initEditImageLoadingId.value) return;
-        const previewSrc = getPreviewUrl(fileInfo.value.id, fileInfo.value.file_path);
+        const previewSrc = getPreviewUrl(
+          fileInfo.value.id,
+          fileInfo.value.file_path,
+          false,
+          Number(fileInfo.value.modified_at || 0),
+          config.settings.rawThumbnailSource,
+        );
         if (previewSrc) {
           imageSrc.value = previewSrc;
         }

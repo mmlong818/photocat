@@ -1,6 +1,6 @@
 <template>
   <div
-    class="group/map relative flex-1 overflow-hidden"
+    class="photo-map-view group/map relative flex-1 overflow-hidden"
     @mouseenter="uiStore.setMapActive(true)"
     @mouseleave="uiStore.setMapActive(false)"
   >
@@ -19,32 +19,20 @@
       />
       <TButton v-if="showAppleMapsButton" :icon="IconExternal" :tooltip="t('file_info.open_apple_maps')" @click="openAppleMaps" />
     </div>
-    <div
-      v-if="isQueryMap && !loading && points.length > 0"
-      class="absolute top-2 right-2 z-500 pointer-events-none rounded-box bg-base-100/60 px-2 py-1 text-xs text-base-content/70"
-    >
-      {{ t('map.photo_count', { count: totalCount.toLocaleString() }) }}
-    </div>
-    <div v-if="isQueryMap && !loading && points.length === 0" class="absolute inset-0 flex items-center justify-center px-4 text-base-content/30">
-      <span class="text-center text-sm">{{ $t('tooltip.not_found.location_hint') }}</span>
-    </div>
-
-    <div v-if="previewFile" class="fixed inset-0 z-1000 flex cursor-pointer items-center justify-center bg-black/80" @click="previewFile = null">
-      <img class="max-h-[90%] max-w-[90%] object-contain" :src="getPreviewUrl(previewFile.id, previewFile.file_path)" />
-      <button class="absolute top-4 right-4 cursor-pointer rounded-box bg-base-100/30 p-2 text-base-content hover:bg-base-100/70" @click.stop="previewFile = null">
-        <IconClose class="w-5 h-5" />
-      </button>
+    <div v-if="isQueryMap && !loading" class="absolute top-2 right-2 z-500 pointer-events-none rounded-box bg-base-100/60 px-2 py-1 text-xs text-base-content/70">
+      {{ points.length > 0 ? t('map.photo_count', { count: totalCount.toLocaleString() }) : t('map.no_photos_in_view') }}
     </div>
   </div>
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import L from 'leaflet'
 import 'leaflet/dist/leaflet.css'
 
 import { config } from '@/common/config'
+import { createTileLayerGroup, getGlobalMapTheme, getMapTheme } from '@/common/mapProviders'
 import {
   getCollectionQueryFileIds,
   getFilesByIds,
@@ -53,9 +41,9 @@ import {
   getSmartQueryFileIds,
   openExternalUrl,
 } from '@/common/api'
-import { getPreviewUrl, getThumbUrl, isMac } from '@/common/utils'
+import { getThumbUrl, isMac } from '@/common/utils'
 import { useUIStore } from '@/stores/uiStore'
-import { IconClose, IconExternal, IconMapCenter, IconMapDefault, IconMapSatellite, IconZoomIn, IconZoomOut } from '@/common/icons'
+import { IconExternal, IconMapCenter, IconMapDefault, IconMapSatellite, IconZoomIn, IconZoomOut } from '@/common/icons'
 import TButton from '@/components/TButton.vue'
 
 const props = defineProps({
@@ -64,11 +52,12 @@ const props = defineProps({
   collectionId: { type: Number, default: null },
   fileIds: { type: Array, default: () => [] },
   restoreView: { type: Object, default: null },
+  active: { type: Boolean, default: true },
   lat: { type: Number, default: 0 },
   lon: { type: Number, default: 0 },
   label: { type: String, default: '猫叔的图' },
 })
-const emit = defineEmits(['open-cluster', 'restored'])
+const emit = defineEmits(['open-cluster', 'select-file', 'preview-file', 'restored'])
 
 const { t } = useI18n()
 const uiStore = useUIStore()
@@ -76,7 +65,6 @@ const mapEl = ref(null)
 const loading = ref(true)
 const points = ref([])
 const zoom = ref(2)
-const previewFile = ref(null)
 const singleMarker = ref(null)
 const totalCount = computed(() => points.value.reduce((sum, point) => sum + point.count, 0))
 const isQueryMap = computed(() => props.queryParams !== null)
@@ -85,6 +73,9 @@ const showAppleMapsButton = computed(() => !isQueryMap.value && isMac && validLa
 const DETAIL_ZOOM = 13
 const DETAIL_LIMIT = 500
 const CLUSTER_SIZE = 76
+// Leaflet resolves a one-point bounds to its maximum zoom. Keep surrounding
+// map context and avoid requesting an unsupported raster detail level instead.
+const SINGLE_POINT_FIT_ZOOM = 13
 const activeMaxZoom = ref(19)
 
 let map = null
@@ -97,15 +88,12 @@ let detailRequestToken = 0
 let detailTimer = null
 let visibleFiles = []
 let sourceFiles = null
-
-const mapThemes = [
-  { url: 'https://tile.openstreetmap.org/{z}/{x}/{y}.png', attribution: 'OpenStreetMap', maxZoom: 19 },
-  { url: 'https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', attribution: 'Powered by Esri', maxZoom: 17 },
-]
+let needsRefresh = false
 
 onMounted(async () => {
   map = L.map(mapEl.value, { center: [20, 0], zoom: 2, keyboard: false, zoomControl: false, maxZoom: activeMaxZoom.value })
   map.attributionControl.setPrefix('')
+  L.control.scale({ position: 'bottomleft', imperial: false }).addTo(map)
   markerLayer = L.layerGroup().addTo(map)
   map.on('zoomend', onMapChanged)
   map.on('moveend', onMapChanged)
@@ -113,11 +101,11 @@ onMounted(async () => {
   resizeObserver.observe(mapEl.value)
   updateTheme()
   window.addEventListener('keydown', handleMapKeyDown, true)
-  if (isQueryMap.value) {
+  if (props.active && isQueryMap.value) {
     await loadPoints(true)
-    emit('restored')
   }
-  else updateFromCoords()
+  else if (props.active) updateFromCoords()
+  else loading.value = false
   requestAnimationFrame(() => map?.invalidateSize())
 })
 
@@ -129,13 +117,38 @@ onBeforeUnmount(() => {
   map?.remove()
 })
 
-watch(() => config.infoPanel.mapTheme, updateTheme)
+watch(() => [config.infoPanel.mapTheme, config.settings.mapProvider, config.settings.tiandituToken], updateTheme)
 watch(() => [props.queryParams, props.querySource, props.collectionId, props.fileIds], () => {
+  if (!props.active) {
+    needsRefresh = true
+    return
+  }
+  needsRefresh = false
   if (isQueryMap.value) void loadPoints(true)
   else updateFromCoords()
 }, { deep: true })
 watch(() => [props.lat, props.lon], () => {
-  if (!isQueryMap.value) updateFromCoords()
+  if (props.active && !isQueryMap.value) updateFromCoords()
+})
+watch(() => props.active, (active) => {
+  if (!active) {
+    pointRequestToken++
+    detailRequestToken++
+    if (detailTimer) clearTimeout(detailTimer)
+    return
+  }
+  void nextTick(async () => {
+    if (!map || !props.active) return
+    map.invalidateSize()
+    if (props.restoreView || needsRefresh) {
+      needsRefresh = false
+      await loadPoints(true)
+      return
+    }
+    zoom.value = map.getZoom()
+    renderMarkers()
+    scheduleDetailFetch()
+  })
 })
 
 async function loadPoints(fitToResults) {
@@ -145,14 +158,15 @@ async function loadPoints(fitToResults) {
   loading.value = true
   try {
     const result = await getMapPoints()
-    if (token !== pointRequestToken) return
+    if (token !== pointRequestToken || !props.active) return
     points.value = result || []
     visibleFiles = []
     if (fitToResults) {
       if (restoreView) {
         map.setView([restoreView.lat, restoreView.lon], restoreView.zoom, { animate: false })
+        emit('restored')
       } else if (points.value.length > 0) {
-        map.fitBounds(L.latLngBounds(points.value.map(point => [point.lat, point.lon])), { padding: [20, 20] })
+        fitMapToPoints()
       } else {
         map.setView([20, 0], 2, { animate: false })
       }
@@ -244,6 +258,9 @@ async function getMapPoints() {
 function aggregateFiles(files) {
   const cells = new Map()
   for (const file of files) {
+    // Number(null) is 0, which would incorrectly place photos without GPS data
+    // at the equator/prime meridian and include them in a map cluster.
+    if (file.gps_latitude == null || file.gps_longitude == null || file.gps_latitude === '' || file.gps_longitude === '') continue
     const lat = Number(file.gps_latitude)
     const lon = Number(file.gps_longitude)
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue
@@ -262,7 +279,7 @@ function renderMarkers() {
   if (!map || !markerLayer) return
   markerLayer.clearLayers()
   if (zoom.value >= DETAIL_ZOOM && visibleFiles.length > 0 && getVisiblePointCount() <= DETAIL_LIMIT) {
-    for (const file of visibleFiles) addPhotoMarker(file.gps_latitude, file.gps_longitude, file.id, 1, file)
+    for (const file of visibleFiles) addPhotoMarker(file.gps_latitude, file.gps_longitude, file.id, 1)
     return
   }
 
@@ -296,7 +313,7 @@ function renderMarkers() {
       }
     }
   }
-  for (const cluster of clusters.values()) addPhotoMarker(cluster.lat, cluster.lon, cluster.file_id, cluster.count, null, cluster)
+  for (const cluster of clusters.values()) addPhotoMarker(cluster.lat, cluster.lon, cluster.file_id, cluster.count, cluster)
 }
 
 function getVisiblePointCount() {
@@ -307,7 +324,7 @@ function getVisiblePointCount() {
   ), 0)
 }
 
-function addPhotoMarker(lat, lon, fileId, count, file = null, cluster = null) {
+function addPhotoMarker(lat, lon, fileId, count, cluster = null) {
   if (lat == null || lon == null) return
   const icon = L.divIcon({
     className: 'map-photo-marker-wrapper',
@@ -317,6 +334,10 @@ function addPhotoMarker(lat, lon, fileId, count, file = null, cluster = null) {
   })
   const marker = L.marker([lat, lon], { icon, keyboard: false }).addTo(markerLayer)
   marker.on('click', () => {
+    if (!cluster || Number(count) === 1) {
+      emit('select-file', fileId)
+      return
+    }
     emit('open-cluster', {
       ...(cluster || {
       minLat: lat - 0.0001,
@@ -328,22 +349,37 @@ function addPhotoMarker(lat, lon, fileId, count, file = null, cluster = null) {
       view: { lat: map.getCenter().lat, lon: map.getCenter().lng, zoom: map.getZoom() },
     })
   })
+  marker.on('dblclick', (event) => {
+    if (cluster && Number(count) !== 1) return
+    L.DomEvent.stop(event.originalEvent)
+    emit('preview-file', fileId)
+  })
 }
 
 function updateTheme() {
+  const theme = getMapTheme(config.settings.mapProvider, config.settings.tiandituToken, config.infoPanel.mapTheme)
+  applyTheme(theme, false)
+}
+
+function applyTheme(theme, isFallback) {
   if (!map) return
   if (tileLayer) map.removeLayer(tileLayer)
-  const theme = mapThemes[Number(config.infoPanel.mapTheme)] || mapThemes[0]
   activeMaxZoom.value = theme.maxZoom
   map.setMaxZoom(theme.maxZoom)
   if (map.getZoom() > theme.maxZoom) map.setZoom(theme.maxZoom)
-  tileErrorFallbackTriggered = false
-  tileLayer = L.tileLayer(theme.url, { attribution: theme.attribution, maxZoom: theme.maxZoom }).addTo(map)
-  tileLayer.on('tileerror', () => {
-    if (!tileErrorFallbackTriggered && Number(config.infoPanel.mapTheme) !== 0) {
+  if (!isFallback) tileErrorFallbackTriggered = false
+
+  const created = createTileLayerGroup(L, theme)
+  const activeLayer = created.layer
+  tileLayer = activeLayer.addTo(map)
+  created.tileLayers.forEach(layer => {
+    layer.on('tileerror', () => {
+      // Requests from a removed layer can still fail after a provider switch.
+      // Ignore them so an old OSM request cannot replace the new provider.
+      if (tileLayer !== activeLayer || tileErrorFallbackTriggered || isFallback) return
       tileErrorFallbackTriggered = true
-      config.infoPanel.mapTheme = 0
-    }
+      applyTheme(getGlobalMapTheme(config.infoPanel.mapTheme), true)
+    })
   })
 }
 
@@ -351,7 +387,13 @@ function zoomIn() { if (map && zoom.value < activeMaxZoom.value) map.setZoom(zoo
 function zoomOut() { if (map && zoom.value > 0) map.setZoom(zoom.value - 1) }
 function fitBounds() {
   if (!map || points.value.length === 0) return map?.setView([20, 0], 2)
-  map.fitBounds(L.latLngBounds(points.value.map(point => [point.lat, point.lon])), { padding: [20, 20] })
+  fitMapToPoints()
+}
+function fitMapToPoints() {
+  map.fitBounds(L.latLngBounds(points.value.map(point => [point.lat, point.lon])), {
+    padding: [20, 20],
+    maxZoom: points.value.length === 1 ? Math.min(SINGLE_POINT_FIT_ZOOM, activeMaxZoom.value) : activeMaxZoom.value,
+  })
 }
 function zoomCenter() {
   zoom.value = 13

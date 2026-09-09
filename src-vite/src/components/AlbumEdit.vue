@@ -10,7 +10,8 @@
         <div class="w-full grid grid-cols-[84px_1fr] gap-x-4 gap-y-1.5 items-center px-1 text-xs select-none">
           <!-- Folder -->
           <div class="h-6 flex items-center text-[11px] text-base-content/45">{{ $t('album.edit.folder') }}</div>
-          <div class="h-6 flex items-center justify-between gap-x-2">
+          <div class="min-h-6 flex flex-col justify-center gap-0.5">
+            <div class="flex items-center justify-between gap-x-2">
             <input v-if="selectedFolder !== ''"
               type="text"
               readonly
@@ -29,6 +30,13 @@
               :selected="true"
               @click="clickSelectFolder"
             />
+            </div>
+            <div
+              v-if="!isNewAlbum && album?.is_accessible === false"
+              class="text-[11px] leading-4 text-warning"
+            >
+              {{ $t('album.folder_unavailable.title') }}
+            </div>
           </div>
 
           <!-- Name -->
@@ -121,7 +129,7 @@
     <div class="mt-4 flex justify-end space-x-4">
       <button 
         class="t-button-default" 
-        @mousedown.left.stop.prevent="clickCancel"
+        @mouseup.left.stop.prevent="clickCancel"
         @click="!$event.detail && clickCancel()"
       >
         {{ $t('msgbox.cancel') }}
@@ -129,7 +137,7 @@
       <button 
         class="t-button-primary"
         :disabled="inputNameValue.trim().length === 0 || selectedFolder.length === 0"
-        @mousedown.left.stop.prevent="clickOk"
+        @mouseup.left.stop.prevent="clickOk"
         @click="!$event.detail && clickOk()"
       >
         {{ $t('msgbox.ok') }}

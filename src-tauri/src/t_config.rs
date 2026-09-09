@@ -153,9 +153,11 @@ pub struct LibraryPanelState {
     pub smart_id: Option<String>,
     #[serde(default = "default_ratings_expanded", alias = "ratings_expanded")]
     pub ratings_expanded: bool,
+    #[serde(default = "default_culling_expanded", alias = "culling_expanded")]
+    pub culling_expanded: bool,
     #[serde(default = "default_subjects_expanded", alias = "subjects_expanded")]
     pub subjects_expanded: bool,
-    #[serde(default, alias = "subject_counts")]
+    #[serde(default)]
     pub subject_counts: HashMap<String, i64>,
 }
 
@@ -164,6 +166,10 @@ fn default_library_item() -> String {
 }
 
 fn default_subjects_expanded() -> bool {
+    true
+}
+
+fn default_culling_expanded() -> bool {
     true
 }
 
@@ -177,6 +183,7 @@ impl Default for LibraryPanelState {
             item: default_library_item(),
             smart_id: None,
             ratings_expanded: default_ratings_expanded(),
+            culling_expanded: default_culling_expanded(),
             subjects_expanded: default_subjects_expanded(),
             subject_counts: HashMap::new(),
         }
@@ -187,6 +194,25 @@ impl Default for LibraryPanelState {
 #[serde(rename_all = "camelCase")]
 pub struct RatingState {
     pub item: Option<i32>,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CullingState {
+    #[serde(default = "default_culling_item")]
+    pub item: String,
+}
+
+fn default_culling_item() -> String {
+    "pick".to_string()
+}
+
+impl Default for CullingState {
+    fn default() -> Self {
+        Self {
+            item: default_culling_item(),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -214,7 +240,9 @@ pub struct CameraState {
 
 impl Default for TagState {
     fn default() -> Self {
-        Self { id: None }
+        Self {
+            id: None,
+        }
     }
 }
 
@@ -325,6 +353,8 @@ pub struct LibraryState {
     pub smart_albums: Vec<CustomSmartAlbumState>,
     #[serde(default)]
     pub rating: RatingState,
+    #[serde(default)]
+    pub culling: CullingState,
     pub tag: TagState,
     pub calendar: CalendarState,
     pub camera: CameraState,
@@ -337,6 +367,10 @@ pub struct LibraryState {
     #[serde(alias = "dest_folder")]
     pub dest_folder: DestFolderState,
     pub index: IndexState,
+    /// Small-file filter value the lazily computed sidebar counts were produced
+    /// under. Counts are invalid whenever this differs from the current setting.
+    #[serde(default)]
+    pub counts_filter: i64,
 }
 
 // ============================================================================

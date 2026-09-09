@@ -38,7 +38,8 @@ brew install --cask lap
 ## Capturas de tela
 
 <p align="center">
-  <img src="../docs/public/screenshots/Lap_0.3.0_main_1.png" alt="Captura de tela do gerenciador de biblioteca de fotos local Lap" width="900">
+  <img src="../docs/public/screenshots/lap_library.png" alt="Gerenciador local de biblioteca de fotos Lap" width="900">
+  <img src="../docs/public/screenshots/lap_map_view.png" alt="Visualização de mapa do Lap" width="900">
 </p>
 
 ## Por que Lap

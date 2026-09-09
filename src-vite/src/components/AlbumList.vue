@@ -160,16 +160,12 @@
               </div>
             </div>
 
-            <div class="flex flex-col overflow-hidden">
+            <div class="flex flex-col overflow-hidden" :class="album.is_accessible === false ? 'opacity-50' : ''">
               <div class="overflow-hidden whitespace-pre text-ellipsis">
                 {{ album.name }}
               </div>
               <div
-                v-if="album.is_accessible === false"
-                class="text-xs overflow-hidden whitespace-nowrap text-ellipsis text-warning/70"
-              >{{ $t('album.folder_unavailable.title') }}</div>
-              <div
-                v-else-if="album.description"
+                v-if="album.description"
                 class="text-xs overflow-hidden whitespace-nowrap text-ellipsis text-base-content/50"
               >{{ album.description }}</div>
             </div>
@@ -177,11 +173,11 @@
             <!-- Right side: Count and Status Icons -->
             <div class="ml-auto">
               <span
-                v-if="props.showTotalCount !== false && album.total"
+                v-if="props.showTotalCount !== false && getAlbumDisplayCount(album) > 0"
                 class="sidebar-item-count"
                 :class="selection.albumId.value === album.id && selection.selected.value ? 'hidden' : 'group-hover:hidden'"
               >
-                {{ album.total.toLocaleString() }}
+                {{ getAlbumDisplayCount(album).toLocaleString() }}
               </span>
             </div>  
 
@@ -209,21 +205,11 @@
               v-if="(isFolderFiltering ? shouldShowFilteredFolderTree(album.id) : album.is_expanded) && getAlbumQueueIndex(album.id, libConfig.index.albumQueue as any[]) === -1"
               class="ml-6 mr-2 my-1 p-1 rounded-box bg-base-300/30 border border-base-content/5 shadow-sm"
             >
-              <div
-                v-if="album.is_accessible === false"
-                class="px-2 py-3 flex items-start gap-2 text-base-content/50"
-              >
-                <IconFolderError class="mt-0.5 w-4 h-4 shrink-0" />
-                <div class="min-w-0">
-                  <div class="text-sm text-base-content/70">{{ $t('album.folder_unavailable.title') }}</div>
-                  <div class="text-xs">{{ $t('album.folder_unavailable.description') }}</div>
-                </div>
-              </div>
               <AlbumFolder
-                v-else
                 :children="isFolderFiltering ? getFilteredFolderTree(album.id) : album.children"
                 :albumId="album.id"
                 :rootPath="album.path"
+                :unavailable="album.is_accessible === false"
                 :allowContextMenu="isMainPane"
                 :filterVisiblePaths="isFolderFiltering ? getVisibleFolderPaths(album.id) : undefined"
                 :filterMatchedPaths="isFolderFiltering ? getMatchedFolderPaths(album.id) : undefined"
@@ -251,6 +237,13 @@
       :initialFolderPath="isNewAlbum ? newAlbumFolderPath : ''"
       @ok="clickEditAlbum"
       @cancel="showAlbumEdit = false"
+    />
+
+    <ImportOrganizeDialog
+      v-if="importAlbum"
+      :album="importAlbum"
+      @complete="handleImportComplete"
+      @cancel="importAlbum = null"
     />
 
     <!-- Remove album dialog -->
@@ -285,20 +278,22 @@ import {
   openFolderDialog,
 } from '@/common/utils';
 import { getAlbumQueueIndex, getAlbumScanState, getAlbumScanIcon, shouldAnimateAlbumScanIcon } from '@/common/scanStatus';
-import { getAllAlbums, getAllAlbumFolders, reorderAlbums, addAlbum, editAlbum, removeAlbum, 
+import { getAllAlbums, getAlbumVisibleCounts, getAllAlbumFolders, reorderAlbums, addAlbum, editAlbum, removeAlbum, 
          fetchFolder, expandFinalFolder, getFileThumbById,
-         getAlbum, isDirectoryAccessible, cancelIndexing as cancelIndexingApi, listenIndexProgress, listenIndexFinished } from '@/common/api';
+         getAlbum, checkAlbumAccessibility, cancelIndexing as cancelIndexingApi, listenIndexProgress, listenIndexFinished, recountAlbum } from '@/common/api';
 import { Album, Folder } from '@/common/types';
 import { useAlbumSelectionProvider, SelectionSource } from '@/composables/useAlbumSelection';
 
 import AlbumFolder from '@/components/AlbumFolder.vue';
 import AlbumEdit from '@/components/AlbumEdit.vue';
+import ImportOrganizeDialog from '@/components/ImportOrganizeDialog.vue';
 import ContextMenu from '@/components/ContextMenu.vue';
 import MessageBox from '@/components/MessageBox.vue';
 import TButton from '@/components/TButton.vue';
 
 import {
   IconAdd,
+  IconDownload,
   IconMore,
   IconInformation,
   IconRemove,
@@ -309,12 +304,12 @@ import {
   IconDragHandle,
   IconOrder,
   IconFolders,
-  IconFolderError,
   IconSearch,
   IconClose,
   IconHeart,
   IconHeartFilled,
 } from '@/common/icons';
+import { SIDEBAR } from '@/common/constants';
 
 const props = withDefaults(defineProps<{
   selectionSource: SelectionSource;
@@ -328,6 +323,10 @@ const props = withDefaults(defineProps<{
 const { t, locale, messages } = useI18n();
 const localeMsg = computed(() => messages.value[locale.value] as any);
 const uiStore = useUIStore();
+
+const getAlbumDisplayCount = (album: Album) => {
+  return Number(libConfig.album.counts?.[String(album.id)] || 0);
+};
 
 // Set up the selection context using provide/inject
 // Pass the expandAndSelectFolder callback so the composable can trigger folder expansion
@@ -344,6 +343,21 @@ let unlistenIndexProgress: (() => void) | undefined;
 let unlistenIndexFinished: (() => void) | undefined;
 let unlistenAlbumsRefreshed: (() => void) | undefined;
 let unlistenAlbumFolderPathsMigrated: (() => void) | undefined;
+let albumCountRequest = 0;
+
+async function refreshAlbumVisibleCounts() {
+  const request = ++albumCountRequest;
+  const libraryId = libConfig._libraryId;
+  const smallFileFilter = Number(config.settings.smallFileFilter || 0);
+  const counts = await getAlbumVisibleCounts(smallFileFilter);
+  if (
+    request !== albumCountRequest
+    || libraryId !== libConfig._libraryId
+    || smallFileFilter !== Number(config.settings.smallFileFilter || 0)
+    || !counts
+  ) return;
+  libConfig.album.counts = counts;
+}
 
 // Computed to check if we're in main album pane
 const isMainPane = computed(() => props.selectionSource === 'album');
@@ -353,6 +367,7 @@ const albumListRootRef = ref<HTMLElement | null>(null);
 // message boxes
 const showAlbumEdit = ref(false);           // show edit album
 const showRemoveAlbumMsgbox = ref(false);   // show remove album
+const importAlbum = ref<Album | null>(null);
 
 const albums = ref<Album[]>([]);
 const albumCovers = ref<Record<number, string>>({});
@@ -466,6 +481,20 @@ function buildFilteredFolderTree(folders: AlbumFolderRecord[], visiblePaths: str
   };
   sortTree(roots);
   return roots;
+}
+
+async function loadCachedAlbumTree(album: Album) {
+  const records = (await getAllAlbumFolders() || [])
+    .filter((folder: AlbumFolderRecord) => Number(folder.album_id) === Number(album.id));
+  const root = records.find((folder: AlbumFolderRecord) => folder.path === album.path) || {
+    id: -Number(album.id),
+    album_id: Number(album.id),
+    name: getFolderName(album.path),
+    path: album.path,
+    has_subfolders: records.length > 0,
+  };
+  const folders = [root, ...records.filter((folder: AlbumFolderRecord) => folder.path !== album.path)];
+  album.children = buildFilteredFolderTree(folders, folders.map((folder: AlbumFolderRecord) => folder.path));
 }
 
 const filteredAlbumResults = computed<FilteredAlbumResult[]>(() => {
@@ -616,10 +645,7 @@ const isAlbumScanning = (albumId: number) =>
 const getAlbumIcon = (album: any) => getAlbumScanIcon(getAlbumStatus(album));
 const shouldAnimateAlbumIcon = (album: any) => shouldAnimateAlbumScanIcon(getAlbumStatus(album));
 const refreshAlbumAccess = async (album: Album) => {
-  album.is_accessible = await isDirectoryAccessible(album.path);
-  if (!album.is_accessible) {
-    album.children = undefined;
-  }
+  album.is_accessible = await checkAlbumAccessibility(album.id);
   return album.is_accessible;
 };
 
@@ -636,6 +662,16 @@ const openAlbumEdit = async (albumId: number) => {
   showAlbumEdit.value = true;
 };
 
+const handleImportComplete = async () => {
+  if (!importAlbum.value) return;
+  const album = getAlbumById(Number(importAlbum.value.id));
+  const updated = await recountAlbum(Number(importAlbum.value.id));
+  if (album && updated) Object.assign(album, updated);
+  if (album?.is_expanded) await expandAlbum(album, true);
+  await refreshAlbumVisibleCounts();
+  await tauriEmit('import-files-added', { albumId: Number(importAlbum.value.id) });
+};
+
 // Get menu items for a specific album (function for lazy evaluation)
 const getMoreMenuItems = async (album: any) => {
   const isAccessible = await refreshAlbumAccess(album);
@@ -648,6 +684,12 @@ const getMoreMenuItems = async (album: any) => {
     {
       label: "-",   // separator
       action: () => {}
+    },
+    {
+      label: `${localeMsg.value.import_organize.import}…`,
+      icon: IconDownload,
+      disabled: !isAccessible,
+      action: () => { importAlbum.value = album; }
     },
     {
       label: isAlbumQueued(album.id)
@@ -717,7 +759,8 @@ const loadAlbumCovers = async () => {
 onMounted( async () => {
   document.addEventListener('pointerdown', handleReorderOutsidePointerDown, true);
   if (albums.value.length === 0) {
-    albums.value = await getAllAlbums();
+    albums.value = await getAllAlbums(true);
+    void refreshAlbumVisibleCounts();
     await loadAlbumCovers();
     isLoading.value = false;
 
@@ -874,6 +917,18 @@ watch(() => config.settings.folderSort, async () => {
 
   if (shouldRestoreFolderSelection && selectedAlbumId > 0) {
     await clickFinalSubFolder(selectedAlbumId, selectedFolderPath);
+  }
+});
+
+watch(() => config.settings.smallFileFilter, () => {
+  if (isMainPane.value && libConfig.activePane === 'main' && config.main.sidebarIndex === SIDEBAR.ALBUM) {
+    void refreshAlbumVisibleCounts();
+  }
+});
+
+watch(() => [config.main.sidebarIndex, libConfig.activePane], () => {
+  if (isMainPane.value && libConfig.activePane === 'main' && config.main.sidebarIndex === SIDEBAR.ALBUM) {
+    void refreshAlbumVisibleCounts();
   }
 });
 
@@ -1081,7 +1136,9 @@ const clickAlbum = async (album: Album) => {
   requestAnimationFrame(() => {
     setTimeout(async () => {
       const isAccessible = await refreshAlbumAccess(album);
-      if (isAccessible && !album.children) {
+      if (!isAccessible) {
+        if (!album.children) await loadCachedAlbumTree(album);
+      } else if (!album.children) {
         const subFolders = await fetchFolder(album.path, false, config.settings.folderSort);
         if (subFolders) {
           album.children = [subFolders];
@@ -1108,7 +1165,9 @@ const expandAlbum = async (album: any, forceRefresh = false) => {
 
   album.is_expanded = willExpand; 
   
-  if (album.is_expanded && !(await refreshAlbumAccess(album))) {
+  await refreshAlbumAccess(album);
+  if (album.is_expanded && album.is_accessible === false) {
+    if (!album.children || forceRefresh) await loadCachedAlbumTree(album);
     return;
   }
   if (album.is_expanded && (!album.children || forceRefresh)) {

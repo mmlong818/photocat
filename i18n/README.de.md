@@ -38,7 +38,8 @@ brew install --cask lap
 ## Screenshots
 
 <p align="center">
-  <img src="../docs/public/screenshots/Lap_0.3.0_main_1.png" alt="Screenshot des lokalen Fotobibliotheksmanagers Lap" width="900">
+  <img src="../docs/public/screenshots/lap_library.png" alt="Lokaler Fotobibliotheksmanager Lap" width="900">
+  <img src="../docs/public/screenshots/lap_map_view.png" alt="Kartenansicht von Lap" width="900">
 </p>
 
 ## Warum Lap

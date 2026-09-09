@@ -108,17 +108,17 @@
 
         </div>
 
-        <!-- Browse Tab -->
-        <div v-else-if="config.settings.tabIndex === 1" class="flex flex-col space-y-2">
+        <!-- Grid Tab -->
+        <div v-else-if="config.settings.tabIndex === 2" class="flex flex-col space-y-2">
 
           <!-- grid view -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
             <div class="flex items-center gap-2 text-base-content/30">
-              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.browse.section_grid') }}</span>
+              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.grid.section_grid') }}</span>
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.browse.style') }}</div>
+                <div>{{ $t('settings.grid.style') }}</div>
               </div>
               <select class="select select-bordered select-sm min-w-32" v-model="config.settings.grid.style">
                 <option v-for="(option, index) in gridStyleOptions" :key="index" :value="option.value">{{ option.label }}</option>
@@ -126,7 +126,7 @@
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.browse.scaling') }}</div>
+                <div>{{ $t('settings.grid.scaling') }}</div>
               </div>
               <select class="select select-bordered select-sm min-w-32" v-model="config.settings.grid.scaling" :disabled="config.settings.grid.style !== 0 && config.settings.grid.style !== 1">
                 <option v-for="(option, index) in gridScalingOptions" :key="index" :value="option.value">{{ option.label }}</option>
@@ -134,7 +134,7 @@
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.browse.thumbnail_corners') }}</div>
+                <div>{{ $t('settings.grid.thumbnail_corners') }}</div>
               </div>
               <select class="select select-bordered select-sm min-w-32" v-model="config.settings.grid.thumbnailCorners">
                 <option v-for="option in thumbnailCornerOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
@@ -142,7 +142,7 @@
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.browse.show_thumbnail_badges') }}</div>
+                <div>{{ $t('settings.grid.show_thumbnail_badges') }}</div>
               </div>
               <select class="select select-bordered select-sm min-w-32" v-model="config.settings.grid.thumbnailBadge">
                 <option v-for="option in thumbnailBadgeOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
@@ -150,7 +150,7 @@
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.browse.label_primary') }}</div>
+                <div>{{ $t('settings.grid.label_primary') }}</div>
               </div>
               <select class="select select-bordered select-sm min-w-32" v-model="config.settings.grid.labelPrimary" :disabled="config.settings.grid.style !== 0">
                   <option v-for="(option, index) in gridLabelOptions" :key="index" :value="option.value">{{ option.label }}</option>
@@ -158,7 +158,7 @@
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.browse.label_secondary') }}</div>
+                <div>{{ $t('settings.grid.label_secondary') }}</div>
               </div>
               <select class="select select-bordered select-sm min-w-32" v-model="config.settings.grid.labelSecondary" :disabled="config.settings.grid.style !== 0">
                   <option v-for="(option, index) in gridLabelOptions" :key="index" :value="option.value">{{ option.label }}</option>
@@ -169,15 +169,15 @@
           <!-- open -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
             <div class="flex items-center gap-2 text-base-content/30">
-              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.browse.section_open') }}</span>
+              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.grid.section_open') }}</span>
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.browse.dbl_click_thumbnail') }}</div>
+                <div>{{ $t('settings.grid.dbl_click_thumbnail') }}</div>
               </div>
               <select class="select select-bordered select-sm min-w-40" v-model="config.settings.dblClickAction">
-                <option value="quickPreview">{{ $t('settings.browse.dbl_click_quick_preview') }}</option>
-                <option value="newWindow">{{ $t('settings.browse.dbl_click_new_window') }}</option>
+                <option value="quickPreview">{{ $t('settings.grid.dbl_click_quick_preview') }}</option>
+                <option value="newWindow">{{ $t('settings.grid.dbl_click_new_window') }}</option>
               </select>
             </div>
           </div>
@@ -185,17 +185,17 @@
           <!-- filmstrip -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
             <div class="flex items-center gap-2 text-base-content/30">
-              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.browse.filmstrip_view.title') }}</span>
+              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.grid.filmstrip_view.title') }}</span>
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.browse.filmstrip_view.enable_filmstrip') }}</div>
+                <div>{{ $t('settings.grid.filmstrip_view.enable_filmstrip') }}</div>
               </div>
               <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="config.settings.grid.showFilmStrip" />
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.browse.filmstrip_view.preview_position') }}</div>
+                <div>{{ $t('settings.grid.filmstrip_view.preview_position') }}</div>
               </div>
               <select class="select select-bordered select-sm min-w-32" v-model="config.settings.grid.previewPosition" :disabled="!config.settings.grid.showFilmStrip">
                 <option v-for="(option, index) in filmStripViewPreviewPositionOptions" :key="index" :value="option.value">{{ option.label }}</option>
@@ -206,7 +206,7 @@
         </div>
 
         <!-- Viewer Tab -->
-        <div v-else-if="config.settings.tabIndex === 2" class="flex flex-col space-y-2">
+        <div v-else-if="config.settings.tabIndex === 3" class="flex flex-col space-y-2">
 
           <!-- navigation -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
@@ -289,7 +289,7 @@
         </div>
 
         <!-- Search Tab -->
-        <div v-else-if="config.settings.tabIndex === 3" class="flex flex-col overflow-hidden space-y-2">
+        <div v-else-if="config.settings.tabIndex === 4" class="flex flex-col overflow-hidden space-y-2">
 
           <!-- image search -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
@@ -400,46 +400,55 @@
           </div>
         </div>
 
-        <!-- Library Tab -->
-        <div v-else-if="config.settings.tabIndex === 4" class="flex flex-col space-y-2">
+        <!-- Browse Tab -->
+        <div v-else-if="config.settings.tabIndex === 1" class="flex flex-col space-y-2">
 
           <!-- album -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
             <div class="flex items-center gap-2 text-base-content/30">
-              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.library.section_album') }}</span>
+              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.browse.section_album') }}</span>
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.library.show_subfolder_files') }}</div>
-                <div class="text-xs text-base-content/30">{{ $t('settings.library.show_subfolder_files_hint') }}</div>
+                <div>{{ $t('settings.browse.show_subfolder_files') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.browse.show_subfolder_files_hint') }}</div>
               </div>
               <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="config.settings.showSubfolderFiles" />
             </div>
           </div>
 
-          <!-- file grouping -->
+          <!-- file display -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
             <div class="flex items-center gap-2 text-base-content/30">
-              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.library.section_file_grouping') }}</span>
+              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.browse.section_file_display') }}</span>
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.library.group_raw_jpeg_pairs') }}</div>
-                <div class="text-xs text-base-content/30">{{ $t('settings.library.group_raw_jpeg_pairs_hint') }}</div>
+                <div>{{ $t('settings.browse.group_raw_jpeg_pairs') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.browse.group_raw_jpeg_pairs_hint') }}</div>
               </div>
               <input type="checkbox" class="toggle toggle-primary toggle-sm" v-model="config.settings.groupRawJpegPairs" />
+            </div>
+            <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="min-w-0 flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.browse.small_file_filter') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.browse.small_file_filter_hint') }}</div>
+              </div>
+              <select class="select select-bordered select-sm w-auto shrink-0" v-model="config.settings.smallFileFilter">
+                <option v-for="option in smallFileFilterOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+              </select>
             </div>
           </div>
 
           <!-- sorting -->
           <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
             <div class="flex items-center gap-2 text-base-content/30">
-              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.library.section_sorting') }}</span>
+              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.browse.section_sorting') }}</span>
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.library.folder_sort') }}</div>
-                <div class="text-xs text-base-content/30">{{ $t('settings.library.folder_sort_hint') }}</div>
+                <div>{{ $t('settings.browse.folder_sort') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.browse.folder_sort_hint') }}</div>
               </div>
               <select class="select select-bordered select-sm min-w-40" v-model="config.settings.folderSort">
                 <option v-for="option in folderSortOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
@@ -447,8 +456,8 @@
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.library.calendar_sort') }}</div>
-                <div class="text-xs text-base-content/30">{{ $t('settings.library.calendar_sort_hint') }}</div>
+                <div>{{ $t('settings.browse.calendar_sort') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.browse.calendar_sort_hint') }}</div>
               </div>
               <select class="select select-bordered select-sm min-w-40" v-model="config.settings.calendarSort">
                 <option v-for="option in calendarSortOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
@@ -456,8 +465,8 @@
             </div>
             <div class="flex items-center justify-between px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="flex flex-col gap-0.5 text-sm leading-5">
-                <div>{{ $t('settings.library.category_sort') }}</div>
-                <div class="text-xs text-base-content/30">{{ $t('settings.library.category_sort_hint') }}</div>
+                <div>{{ $t('settings.browse.category_sort') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.browse.category_sort_hint') }}</div>
               </div>
               <select class="select select-bordered select-sm min-w-40" v-model="config.settings.categorySort">
                 <option v-for="option in categorySortOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
@@ -486,6 +495,15 @@
             </div>
             <div class="flex items-center justify-between gap-4 px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
               <div class="min-w-0 flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.advanced.raw_thumbnail_source') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.advanced.raw_thumbnail_source_hint') }}</div>
+              </div>
+              <select class="select select-bordered select-sm min-w-40 shrink-0" :value="config.settings.rawThumbnailSource" @change="onRawThumbnailSourceChange">
+                <option v-for="option in rawThumbnailSourceOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+              </select>
+            </div>
+            <div class="flex items-center justify-between gap-4 px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="min-w-0 flex flex-col gap-0.5 text-sm leading-5">
                 <div>{{ $t('settings.advanced.clean_unused_thumbnails') }}</div>
                 <div class="text-xs text-base-content/30">{{ $t('settings.advanced.clean_unused_thumbnails_hint') }}</div>
               </div>
@@ -496,6 +514,50 @@
               >
                 {{ isCleaningThumbnailCache ? $t('tooltip.loading') : $t('settings.advanced.clean') }}
               </button>
+            </div>
+          </div>
+
+          <!-- map -->
+          <div class="rounded-box p-2 space-y-2 bg-base-300/30 border border-base-content/5 shadow-sm">
+            <div class="flex items-center gap-2 text-base-content/30">
+              <span class="font-bold uppercase text-[10px] tracking-widest">{{ $t('settings.advanced.section_map') }}</span>
+            </div>
+            <div class="flex items-center justify-between gap-4 px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="min-w-0 flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.advanced.map_provider') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.advanced.map_provider_hint') }}</div>
+              </div>
+              <select class="select select-bordered select-sm min-w-40 shrink-0" v-model="config.settings.mapProvider">
+                <option v-for="option in mapProviderOptions" :key="option.value" :value="option.value">{{ option.label }}</option>
+              </select>
+            </div>
+            <div v-if="config.settings.mapProvider === 'tianditu'" class="flex items-center justify-between gap-4 px-1 rounded-box hover:bg-base-100/10 transition-colors duration-200">
+              <div class="min-w-0 flex flex-col gap-0.5 text-sm leading-5">
+                <div>{{ $t('settings.advanced.tianditu_token') }}</div>
+                <div class="text-xs text-base-content/30">{{ $t('settings.advanced.tianditu_token_hint') }}</div>
+              </div>
+              <div class="flex shrink-0 items-center gap-2">
+                <div class="relative">
+                  <input
+                    v-model="tiandituTokenInput"
+                    class="input input-bordered input-sm min-w-40 w-48"
+                    type="text"
+                    spellcheck="false"
+                    autocomplete="off"
+                    :placeholder="$t('settings.advanced.tianditu_token_placeholder')"
+                    @input="onTiandituTokenInput"
+                    @keydown.enter.prevent="commitTiandituToken"
+                    @blur="commitTiandituToken"
+                  >
+                </div>
+                <span
+                  v-if="tiandituTokenStatus !== 'idle'"
+                  class="min-w-20 text-xs whitespace-nowrap"
+                  :class="tiandituTokenStatusClass"
+                >
+                  {{ tiandituTokenStatusLabel }}
+                </span>
+              </div>
             </div>
           </div>
 
@@ -688,9 +750,9 @@ const shortcutPlatform: ShortcutPlatform = isMac ? 'mac' : (isLinux ? 'linux' : 
 const settingsTabs = [
   'settings.general.title',
   'settings.browse.title',
+  'settings.grid.title',
   'settings.image_view.title',
   'settings.image_search.title',
-  'settings.library.title',
   'settings.advanced.title',
   'settings.shortcuts.title',
   'settings.about.title',
@@ -714,6 +776,8 @@ const multilingualModelDownloadedBytes = ref(0);
 const multilingualModelTotalBytes = ref(0);
 const isMultilingualModelAvailable = ref(false);
 const isCleaningThumbnailCache = ref(false);
+const tiandituTokenInput = ref(String(config.settings.tiandituToken || ''));
+const tiandituTokenStatus = ref<'idle' | 'saved' | 'empty'>('idle');
 let unlistenImageSearchModelDownloadProgress: (() => void) | null = null;
 
 const onRestoreDone = () => {
@@ -773,7 +837,7 @@ const scaleOptions = computed(() => {
 });
 
 const folderSortOptions = computed(() => {
-  const options = localeMsg.value.settings.library.folder_sort_options || [];
+  const options = localeMsg.value.settings.browse.folder_sort_options || [];
   const result = [];
 
   for (let i = 0; i < options.length; i++) {
@@ -784,7 +848,7 @@ const folderSortOptions = computed(() => {
 });
 
 const calendarSortOptions = computed(() => {
-  const options = localeMsg.value.settings.library.calendar_sort_options || [];
+  const options = localeMsg.value.settings.browse.calendar_sort_options || [];
   const result = [];
 
   for (let i = 0; i < options.length; i++) {
@@ -795,7 +859,7 @@ const calendarSortOptions = computed(() => {
 });
 
 const categorySortOptions = computed(() => {
-  const options = localeMsg.value.settings.library.category_sort_options || [];
+  const options = localeMsg.value.settings.browse.category_sort_options || [];
   const result = [];
 
   for (let i = 0; i < options.length; i++) {
@@ -803,6 +867,11 @@ const categorySortOptions = computed(() => {
   }
 
   return result;
+});
+
+const smallFileFilterOptions = computed(() => {
+  const options = localeMsg.value.settings.browse.small_file_filter_options || [];
+  return [0, 160, 320, 640].map((value, index) => ({ label: options[index] ?? String(value), value }));
 });
 
 // Define the wheel options using computed to react to language changes
@@ -827,10 +896,73 @@ const thumbnailQualityOptions = computed(() => {
   ];
 });
 
+const rawThumbnailSourceOptions = computed(() => {
+  const labels = localeMsg.value.settings.advanced.raw_thumbnail_source_options || [
+    'RAW Rendering (default)',
+    'Embedded preview (faster)',
+  ];
+  return [
+    { value: 'processed', label: labels[0] },
+    { value: 'embedded', label: labels[1] },
+  ];
+});
+
+const mapProviderOptions = computed(() => {
+  const labels = localeMsg.value.settings.advanced.map_provider_options || [
+    'Global (default)',
+    'China (Tianditu)',
+  ];
+  return [
+    { value: 'global', label: labels[0] },
+    { value: 'tianditu', label: labels[1] },
+  ];
+});
+
+const tiandituTokenStatusLabel = computed(() => {
+  const labels: Record<string, string> = {
+    saved: t('settings.advanced.tianditu_token_status_saved'),
+    empty: t('settings.advanced.tianditu_token_status_empty'),
+  };
+  return labels[tiandituTokenStatus.value] || '';
+});
+
+const tiandituTokenStatusClass = computed(() => {
+  if (tiandituTokenStatus.value === 'saved') return 'text-success';
+  return 'text-base-content/40';
+});
+
+function onTiandituTokenInput() {
+  tiandituTokenStatus.value = 'idle';
+}
+
+function normalizeTiandituToken(value: string) {
+  const token = value.trim();
+  const queryToken = token.match(/[?&]tk=([^&#\s]+)/i)?.[1];
+  const normalizedToken = queryToken || token.replace(/^tk=/i, '');
+  try {
+    return decodeURIComponent(normalizedToken);
+  } catch {
+    return normalizedToken;
+  }
+}
+
+function commitTiandituToken() {
+  const token = normalizeTiandituToken(tiandituTokenInput.value);
+  tiandituTokenInput.value = token;
+  config.settings.tiandituToken = token;
+  tiandituTokenStatus.value = token ? 'saved' : 'empty';
+}
+
 function onThumbnailSizeChange(event: Event) {
   const next = normalizeThumbnailSize((event.target as HTMLSelectElement).value);
   if (normalizeThumbnailSize(config.settings.thumbnailSize) === next) return;
   config.settings.thumbnailSize = next;
+}
+
+function onRawThumbnailSourceChange(event: Event) {
+  config.settings.rawThumbnailSource = (event.target as HTMLSelectElement).value === 'embedded'
+    ? 'embedded'
+    : 'processed';
 }
 
 async function cleanUnusedThumbnailCache() {
@@ -852,7 +984,7 @@ async function cleanUnusedThumbnailCache() {
 
 // Define the grid scaling options
 const gridScalingOptions = computed(() => {
-  const options = localeMsg.value.settings.browse.scaling_options;
+  const options = localeMsg.value.settings.grid.scaling_options;
   const result = [];
 
   for (let i = 0; i < options.length; i++) {
@@ -863,13 +995,13 @@ const gridScalingOptions = computed(() => {
 });
 
 const thumbnailCornerOptions = computed(() => {
-  const options = localeMsg.value.settings.browse.thumbnail_corner_options;
+  const options = localeMsg.value.settings.grid.thumbnail_corner_options;
   return options.map((label: string, index: number) => ({ label, value: index }));
 });
 
 // Define the grid style options
 const gridStyleOptions = computed(() => {
-  const options = localeMsg.value.settings.browse.style_options;
+  const options = localeMsg.value.settings.grid.style_options;
   const result = [];
 
   for (let i = 0; i < options.length; i++) {
@@ -881,7 +1013,7 @@ const gridStyleOptions = computed(() => {
 
 // Define the grid label options
 const gridLabelOptions = computed(() => {
-  const options = localeMsg.value.settings.browse.label_options;
+  const options = localeMsg.value.settings.grid.label_options;
   const result = [];
 
   for (let i = 0; i < options.length; i++) {
@@ -892,7 +1024,7 @@ const gridLabelOptions = computed(() => {
 });
 
 const thumbnailBadgeOptions = computed(() => {
-  const options = localeMsg.value.settings.browse.thumbnail_badge_options;
+  const options = localeMsg.value.settings.grid.thumbnail_badge_options;
   const values = [
     THUMBNAIL_BADGE.EMPTY,
     THUMBNAIL_BADGE.FILE_FORMAT,
@@ -948,7 +1080,7 @@ const slideShowTransitionOptions = computed(() => {
 });
 
 const filmStripViewPreviewPositionOptions = computed(() => {
-  const options = localeMsg.value.settings.browse.filmstrip_view.preview_position_options;
+  const options = localeMsg.value.settings.grid.filmstrip_view.preview_position_options;
   return options.map((label, i) => ({ label, value: i }));
 });
 
@@ -1390,10 +1522,22 @@ watch(() => config.settings.showSubfolderFiles, (newValue) => {
 watch(() => config.settings.groupRawJpegPairs, (newValue) => {
   emit('settings-groupRawJpegPairs-changed', newValue);
 });
+watch(() => config.settings.smallFileFilter, (newValue) => {
+  emit('settings-smallFileFilter-changed', newValue);
+});
 
 // grid view settings
 watch(() => config.settings.thumbnailSize, (newValue) => {
   emit('settings-thumbnailSize-changed', newValue);
+});
+watch(() => config.settings.rawThumbnailSource, (newValue) => {
+  emit('settings-rawThumbnailSource-changed', newValue);
+});
+watch(() => config.settings.mapProvider, (newValue) => {
+  emit('settings-mapProvider-changed', newValue);
+});
+watch(() => config.settings.tiandituToken, (newValue) => {
+  emit('settings-tiandituToken-changed', newValue);
 });
 watch(() => config.settings.grid.style, (newValue) => {
   emit('settings-gridStyle-changed', newValue);

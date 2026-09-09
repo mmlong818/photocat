@@ -147,7 +147,7 @@
         </div>
         <div class="flex flex-wrap items-center gap-1">
           <PanelActionButton
-            :icon="IconMove"
+            :icon="IconFileArrowRight"
             :disabled="selectedCount === 0"
             @click="$emit('moveWithinLibrary')"
           >
@@ -215,7 +215,7 @@ import {
   IconUnChecked,
   IconClose,
   IconComment,
-  IconMove,
+  IconFileArrowRight,
   IconRotate,
   IconTag,
   IconTrash,

@@ -705,9 +705,24 @@ pub async fn get_video_metadata_async(file_path: &str) -> Result<VideoMetadata, 
         width: w,
         height: h,
         duration,
-        e_make: first_exist(&meta, &["make", "camera_make"]),
-        e_model: first_exist(&meta, &["model", "camera_model"]),
-        e_software: first_exist(&meta, &["software", "encoder"]),
+        e_make: first_camera_tag(
+            &meta,
+            stream_meta.as_ref(),
+            "com.apple.quicktime.make",
+            &["make", "camera_make"],
+        ),
+        e_model: first_camera_tag(
+            &meta,
+            stream_meta.as_ref(),
+            "com.apple.quicktime.model",
+            &["model", "camera_model"],
+        ),
+        e_software: first_camera_tag(
+            &meta,
+            stream_meta.as_ref(),
+            "com.apple.quicktime.software",
+            &["software", "encoder"],
+        ),
         e_date_time,
         gps_latitude,
         gps_longitude,
@@ -936,11 +951,25 @@ pub fn get_video_metadata(file_path: &str) -> Result<VideoMetadata, String> {
 
 fn first_exist(meta: &HashMap<String, String>, keys: &[&str]) -> Option<String> {
     for k in keys {
-        if let Some(v) = meta.get(*k) {
+        if let Some(v) = meta.get(*k).filter(|value| !value.trim().is_empty()) {
             return Some(v.clone());
         }
     }
     None
+}
+
+/// Prefer Apple QuickTime camera metadata, then retain the generic metadata
+/// fallback used by videos from other devices.
+fn first_camera_tag(
+    meta: &HashMap<String, String>,
+    stream_meta: Option<&HashMap<String, String>>,
+    apple_key: &str,
+    generic_keys: &[&str],
+) -> Option<String> {
+    first_exist(meta, &[apple_key])
+        .or_else(|| stream_meta.and_then(|tags| first_exist(tags, &[apple_key])))
+        .or_else(|| first_exist(meta, generic_keys))
+        .or_else(|| stream_meta.and_then(|tags| first_exist(tags, generic_keys)))
 }
 
 fn first_parseable_date(meta: &HashMap<String, String>, keys: &[&str]) -> Option<String> {
