@@ -1070,7 +1070,10 @@ fn cleanup_metadata_backup(path: &Option<PathBuf>) {
 
 /// Copies metadata from source to destination.
 /// Prefers little_exif for JPEGs and falls back to kamadak-exif for RAW formats.
-fn copy_metadata_to_output(source_path: &Path, dest_path: &Path) -> Result<(), String> {
+pub(crate) fn copy_metadata_to_output(
+    source_path: &Path,
+    dest_path: &Path,
+) -> Result<(), String> {
     let source_path_buf = source_path.to_path_buf();
 
     // Check file type to detect RAW formats
@@ -1442,24 +1445,36 @@ pub async fn copy_edited_image_to_clipboard(params: EditParams) -> bool {
     false
 }
 
-/// get an edited image
-async fn get_edited_image(params: &EditParams) -> Result<DynamicImage, String> {
-    let file_type = t_utils::get_file_type(&params.source_file_path).unwrap_or(0);
-    let mut img = if should_generate_preview_for_file(&params.source_file_path, file_type) {
-        let preview = get_generated_preview_bytes(&params.source_file_path)
+/// Decode any supported image to a pixel buffer, whatever the backend.
+///
+/// Formats the `image` crate cannot read on its own — RAW, HEIC, JXL, TIFF,
+/// AVIF and the FFmpeg-backed ones — come back through their preview
+/// pipelines, which already apply EXIF orientation; everything else is
+/// decoded directly and oriented here.
+///
+/// Note the preview pipelines cap the long edge at 4096 px, so those formats
+/// cannot be decoded at full resolution through this path.
+pub(crate) async fn decode_source_image(
+    file_path: &str,
+    orientation: i32,
+) -> Result<DynamicImage, String> {
+    let file_type = t_utils::get_file_type(file_path).unwrap_or(0);
+    if should_generate_preview_for_file(file_path, file_type) {
+        let preview = get_generated_preview_bytes(file_path)
             .await?
             .ok_or_else(|| "Failed to resolve editable preview image".to_string())?;
-        let img = image::load_from_memory(&preview)
-            .map_err(|e| format!("Failed to decode editable preview image: {}", e))?;
-
-        img
+        image::load_from_memory(&preview)
+            .map_err(|e| format!("Failed to decode editable preview image: {}", e))
     } else {
-        let path = Path::new(&params.source_file_path);
-        let mut img = image::open(path).map_err(|e| e.to_string())?;
-        // orientation adjustment based on exif orientation value
-        img = apply_orientation(img, params.orientation);
-        img
-    };
+        let img = image::open(Path::new(file_path)).map_err(|e| e.to_string())?;
+        Ok(apply_orientation(img, orientation))
+    }
+}
+
+/// get an edited image
+async fn get_edited_image(params: &EditParams) -> Result<DynamicImage, String> {
+    let mut img =
+        decode_source_image(&params.source_file_path, params.orientation).await?;
 
     // 1. Flip
     if params.flip_horizontal {

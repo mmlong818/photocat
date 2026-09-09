@@ -2157,3 +2157,27 @@ export async function takeMigrationReport() {
     return null;
   }
 }
+
+// batch export
+
+/// Start exporting `files` into `destination` using `preset`.
+/// Progress arrives on the export-progress event; completion on export-finished.
+export async function exportFiles(request) {
+  return await invoke('export_files', { request });
+}
+
+export async function cancelExport() {
+  try {
+    return await invoke('cancel_export');
+  } catch (error) {
+    console.error('cancelExport error:', error);
+  }
+}
+
+export async function listenExportProgress(callback) {
+  return await listen('export-progress', callback);
+}
+
+export async function listenExportFinished(callback) {
+  return await listen('export-finished', callback);
+}

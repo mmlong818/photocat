@@ -122,6 +122,12 @@ export const useConfigStore = defineStore('configStore', {
       showStatusBar: true,        // show status bar
       autoCheckUpdates: true,      // automatically check for updates
       customSubjects: [],         // user-defined subjects: { id, name, prompt, precision }
+      exportOptions: {            // batch export presets and last-used choices
+        presets: [],
+        lastPresetId: 'builtin:share',
+        lastDestination: '',
+        conflict: 'keep_both',
+      },
       debugMode: false,           // debug mode
 
       // navigation settings

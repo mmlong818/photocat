@@ -3,6 +3,7 @@ import { config, libConfig } from '@/common/config';
 import { SIDEBAR } from '@/common/constants';
 import { DEFAULT_PLATFORM, getShortcutLabel, ShortcutActionId } from '@/common/shortcuts';
 import {
+  IconDownload,
   IconMonitor,
   IconPrint,
   IconRefresh,
@@ -86,6 +87,12 @@ export const useFileMenuItems = (
         icon: markRaw(selectionCount >= 3 ? IconSplitOn4 : IconSplitOn),
         disabled: kind !== 'image' || selectionCount < 2,
         action: createAction('compare-selected-images'),
+      },
+      {
+        label: String(localeMsg.value.menu.file.export_selected || 'Export...'),
+        icon: markRaw(IconDownload),
+        disabled: kind !== 'image' || selectionCount < 1,
+        action: createAction('export-selected'),
       },
       externalAppMenu(externalAppKind),
     ];
@@ -264,6 +271,12 @@ export const useFileMenuItems = (
             action: createAction('copy-to-folder')
           },
         ]
+      },
+      {
+        label: String(localeMsg.value.menu.file.export_selected || 'Export...'),
+        icon: markRaw(IconDownload),
+        hidden: f.file_type === 2,
+        action: createAction('export-selected')
       },
       {
         label: isMac ? localeMsg.value.menu.file.reveal_in_finder : localeMsg.value.menu.file.reveal_in_file_explorer,

@@ -626,6 +626,12 @@
     @cancel="cancelExternalOpen"
   />
 
+  <ExportDialog
+    v-if="exportCandidates.length > 0"
+    :files="exportCandidates"
+    @cancel="exportCandidates = []"
+  />
+
   <ExternalAppsDialog
     v-if="showExternalAppsDialog"
     @cancel="showExternalAppsDialog = false"
@@ -801,6 +807,7 @@ import TButton from '@/components/TButton.vue';
 import TaggingDialog from '@/components/TaggingDialog.vue';
 import AddToCollectionDialog from '@/components/AddToCollectionDialog.vue';
 import ExternalAppsDialog from '@/components/ExternalAppsDialog.vue';
+import ExportDialog from '@/components/ExportDialog.vue';
 import FileInfo from '@/components/FileInfo.vue';
 import Breadcrumb from '@/components/Breadcrumb.vue';
 import DedupPane from '@/components/DedupPane.vue';
@@ -2142,6 +2149,7 @@ const isTrashDeleting = ref(false);
 const showTrashFailedMsgbox = ref(false);
 const showExternalOpenWarningMsgbox = ref(false);
 const showExternalAppsDialog = ref(false);
+const exportCandidates = ref<any[]>([]);
 const pendingExternalOpen = ref<{ paths: string[]; appPath: string } | null>(null);
 const permanentDeleteChecked = ref(false);
 const deletePermanently = ref(false);
@@ -4203,6 +4211,7 @@ function handleItemAction(payload: { action: string, index: number }) {
     },
     'set-album-cover': clickSetAlbumCover,
     'set-desktop-wallpaper': () => void clickSetDesktopWallpaper(),
+    'export-selected': () => void onExportSelected(),
   };
 
   if ((actionMap as any)[action]) {
@@ -8381,6 +8390,19 @@ const resolveConflictPolicy = async (
     return { policy: applyAllPolicy, applyAll: true };
   }
   return requestFileConflict(name, destPath, showApplyAll, !isSamePath);
+}
+
+// Hand the current selection to the export dialog. Videos have no export
+// pipeline, so they are dropped rather than silently failing one by one.
+const onExportSelected = async () => {
+  const files = await getFilesForFolderAction();
+  if (!files) return;
+  const images = files.filter((file: any) => file && Number(file.file_type) !== 2 && file.file_path);
+  if (images.length === 0) {
+    toast.error(t('export.no_images'));
+    return;
+  }
+  exportCandidates.value = images;
 }
 
 const getFilesForFolderAction = async () => {

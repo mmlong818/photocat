@@ -21,6 +21,7 @@ mod t_cmds;
 mod t_common;
 mod t_config;
 mod t_dedup;
+mod t_export;
 mod t_face;
 mod t_heif;
 mod t_http;
@@ -136,6 +137,7 @@ async fn main() {
         .manage(t_datadir::MigrationOutcome::default())
         .manage(t_similar::SimilarState::default())
         .manage(t_vectors::VectorCacheState::default())
+        .manage(t_export::ExportCancellation::default())
         .setup(|_app| {
             // The identifier decides where app data lives, so it has to be set
             // before any other code resolves a data path.
@@ -372,6 +374,8 @@ async fn main() {
             // file operations
             t_cmds::edit_image,
             t_cmds::copy_edited_image,
+            t_cmds::export_files,
+            t_cmds::cancel_export,
             t_cmds::copy_images,
             t_cmds::rename_file,
             t_cmds::move_file,

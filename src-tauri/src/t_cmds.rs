@@ -49,6 +49,13 @@ impl Default for ImportState {
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+struct ExportFinished {
+    result: Option<crate::t_export::ExportResult>,
+    error: Option<String>,
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct ImportOrganizeFinished {
     result: Option<crate::t_utils::ImportOrganizeResult>,
     error: Option<String>,
@@ -1370,6 +1377,52 @@ pub async fn edit_image(params: t_image::EditParams) -> Result<bool, String> {
 pub async fn copy_edited_image(params: t_image::EditParams) -> Result<bool, String> {
     Ok(t_image::copy_edited_image_to_clipboard(params).await)
 }
+
+/// Start a batch export. Returns as soon as the work is queued; the caller
+/// follows `export-progress` and waits for `export-finished`.
+#[tauri::command]
+pub fn export_files(
+    app_handle: AppHandle,
+    state: State<crate::t_export::ExportCancellation>,
+    request: crate::t_export::ExportRequest,
+) -> Result<(), String> {
+    let shared = state.0.clone();
+    crate::t_export::begin(&shared)?;
+
+    let progress_handle = app_handle.clone();
+    let cancel_flag = shared.clone();
+    tauri::async_runtime::spawn(async move {
+        let result = crate::t_export::export_files(
+            request,
+            |progress| {
+                let _ = progress_handle.emit("export-progress", progress);
+            },
+            || cancel_flag.cancelled.load(std::sync::atomic::Ordering::SeqCst),
+        )
+        .await;
+
+        crate::t_export::finish(&shared);
+
+        let payload = match result {
+            Ok(result) => ExportFinished { result: Some(result), error: None },
+            Err(error) => ExportFinished { result: None, error: Some(error) },
+        };
+        let _ = app_handle.emit("export-finished", payload);
+    });
+
+    Ok(())
+}
+
+/// Ask a running export to stop after the file it is on.
+#[tauri::command]
+pub fn cancel_export(state: State<crate::t_export::ExportCancellation>) -> Result<(), String> {
+    state
+        .0
+        .cancelled
+        .store(true, std::sync::atomic::Ordering::SeqCst);
+    Ok(())
+}
+
 
 /// Copy up to 10 content items to the clipboard (a paired item has two files).
 #[tauri::command]
