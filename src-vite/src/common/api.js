@@ -2181,3 +2181,40 @@ export async function listenExportProgress(callback) {
 export async function listenExportFinished(callback) {
   return await listen('export-finished', callback);
 }
+
+// in-image text recognition
+
+/// { availability: 'ready' | 'unsupported_platform' | 'no_language', processed, withText }
+export async function getOcrStatus() {
+  try {
+    return await invoke('get_ocr_status');
+  } catch (error) {
+    console.error('getOcrStatus error:', error);
+    return null;
+  }
+}
+
+/// Read the given files. Already-read files are skipped unless redo is true.
+export async function recognizeText(fileIds, redo = false) {
+  return await invoke('recognize_text', { fileIds, redo });
+}
+
+export async function cancelRecognizeText() {
+  try {
+    return await invoke('cancel_recognize_text');
+  } catch (error) {
+    console.error('cancelRecognizeText error:', error);
+  }
+}
+
+export async function clearRecognizedText() {
+  return await invoke('clear_recognized_text');
+}
+
+export async function listenOcrProgress(callback) {
+  return await listen('ocr-progress', callback);
+}
+
+export async function listenOcrFinished(callback) {
+  return await listen('ocr-finished', callback);
+}

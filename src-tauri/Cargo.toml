@@ -95,7 +95,17 @@ objc2-foundation = { version = "0.3.2", default-features = false, features = ["N
 
 [target.'cfg(target_os = "windows")'.dependencies]
 clipboard-win = "5.4.1"
-windows = { version = "0.61.3", default-features = false, features = ["Win32_Foundation", "Win32_System_Com", "Win32_UI_Shell"] }
+windows = { version = "0.61.3", default-features = false, features = [
+    "Win32_Foundation",
+    "Win32_System_Com",
+    "Win32_UI_Shell",
+    # Windows.Media.Ocr: the system text recogniser, used by t_ocr.
+    "Media_Ocr",
+    "Globalization",
+    "Graphics_Imaging",
+    "Storage_Streams",
+    "Foundation_Collections",
+] }
 
 [features]
 # This feature is used for production builds or when a dev server is not specified, DO NOT REMOVE!!

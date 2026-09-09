@@ -632,6 +632,12 @@
     @cancel="exportCandidates = []"
   />
 
+  <OcrDialog
+    v-if="ocrCandidates.length > 0"
+    :files="ocrCandidates"
+    @cancel="ocrCandidates = []"
+  />
+
   <ExternalAppsDialog
     v-if="showExternalAppsDialog"
     @cancel="showExternalAppsDialog = false"
@@ -808,6 +814,7 @@ import TaggingDialog from '@/components/TaggingDialog.vue';
 import AddToCollectionDialog from '@/components/AddToCollectionDialog.vue';
 import ExternalAppsDialog from '@/components/ExternalAppsDialog.vue';
 import ExportDialog from '@/components/ExportDialog.vue';
+import OcrDialog from '@/components/OcrDialog.vue';
 import FileInfo from '@/components/FileInfo.vue';
 import Breadcrumb from '@/components/Breadcrumb.vue';
 import DedupPane from '@/components/DedupPane.vue';
@@ -2150,6 +2157,7 @@ const showTrashFailedMsgbox = ref(false);
 const showExternalOpenWarningMsgbox = ref(false);
 const showExternalAppsDialog = ref(false);
 const exportCandidates = ref<any[]>([]);
+const ocrCandidates = ref<any[]>([]);
 const pendingExternalOpen = ref<{ paths: string[]; appPath: string } | null>(null);
 const permanentDeleteChecked = ref(false);
 const deletePermanently = ref(false);
@@ -4212,6 +4220,7 @@ function handleItemAction(payload: { action: string, index: number }) {
     'set-album-cover': clickSetAlbumCover,
     'set-desktop-wallpaper': () => void clickSetDesktopWallpaper(),
     'export-selected': () => void onExportSelected(),
+    'recognize-text': () => void onRecognizeText(),
   };
 
   if ((actionMap as any)[action]) {
@@ -8390,6 +8399,18 @@ const resolveConflictPolicy = async (
     return { policy: applyAllPolicy, applyAll: true };
   }
   return requestFileConflict(name, destPath, showApplyAll, !isSamePath);
+}
+
+// Read the words out of the selected images so they become searchable.
+const onRecognizeText = async () => {
+  const files = await getFilesForFolderAction();
+  if (!files) return;
+  const images = files.filter((file: any) => file && Number(file.file_type) !== 2 && file.id);
+  if (images.length === 0) {
+    toast.error(t('ocr.no_images'));
+    return;
+  }
+  ocrCandidates.value = images;
 }
 
 // Hand the current selection to the export dialog. Videos have no export

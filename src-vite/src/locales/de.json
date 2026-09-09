@@ -654,6 +654,7 @@
       "refresh_subfolders": "Unterordner aktualisieren"
     },
     "file": {
+      "recognize_text": "Text erkennen…",
       "export_selected": "Exportieren…",
       "new_folder": "Neuer Ordner",
       "view_in_new_window": "In neuem Fenster...",
@@ -1154,6 +1155,28 @@
       "use_external_with_app": "Versuchen Sie stattdessen, es in {app} zu öffnen.",
       "unknown": "Unbekannter Fehler"
     }
+  },
+  "ocr": {
+    "title": "Recognize text",
+    "summary": "Reading the text in {count} images.",
+    "explain": "Results are stored locally; afterwards typing a word in the search box finds the screenshot containing it. Uses the recognizer built into the operating system, with no network access.",
+    "redo": "Read again",
+    "redo_hint": "Images already read are skipped by default.",
+    "start": "Start",
+    "stop": "Stop",
+    "working": "Reading...",
+    "counts": "{processed}/{total} · {withText} with text · {failed} failed",
+    "done": "Read {processed} images, {withText} contained text.",
+    "done_cancelled": "Stopped after {processed} images.",
+    "done_with_failures": "{withText} contained text, {failed} failed.",
+    "no_images": "The selection contains no images to read.",
+    "unavailable_platform": "Text recognition is not available on this platform yet.",
+    "unavailable_language": "No text-recognition language is installed on this system.",
+    "unavailable_hint": "In Windows Settings, under Time & language, add the optional Optical character recognition feature for the language you need.",
+    "section": "Text recognition",
+    "status": "{processed} images read, {withText} contained text.",
+    "clear": "Clear recognized text",
+    "cleared": "Recognized text cleared."
   },
   "export": {
     "title": "Export",

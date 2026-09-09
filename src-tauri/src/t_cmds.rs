@@ -49,6 +49,13 @@ impl Default for ImportState {
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+struct OcrFinished {
+    result: Option<crate::t_ocr::OcrResult>,
+    error: Option<String>,
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct ExportFinished {
     result: Option<crate::t_export::ExportResult>,
     error: Option<String>,
@@ -1411,6 +1418,101 @@ pub fn export_files(
     });
 
     Ok(())
+}
+
+/// Whether this machine can read text out of images, and how much of the
+/// current library has already been read.
+#[tauri::command]
+pub fn get_ocr_status() -> Result<serde_json::Value, String> {
+    let availability = crate::t_ocr::availability();
+    let (processed, with_text) = crate::t_ocr::stats().unwrap_or((0, 0));
+    Ok(serde_json::json!({
+        "availability": availability,
+        "processed": processed,
+        "withText": with_text,
+    }))
+}
+
+/// Read the given files. Already-read files are skipped unless `redo` is set.
+#[tauri::command]
+pub fn recognize_text(
+    app_handle: AppHandle,
+    state: State<crate::t_ocr::OcrCancellation>,
+    file_ids: Vec<i64>,
+    redo: bool,
+) -> Result<(), String> {
+    let shared = state.0.clone();
+    crate::t_ocr::begin(&shared)?;
+
+    let queue = (|| -> Result<Vec<(i64, String, i32)>, String> {
+        let wanted = if redo {
+            file_ids.clone()
+        } else {
+            crate::t_ocr::pending(&file_ids)?
+        };
+        let files = AFile::get_files_by_ids(&wanted)?;
+        let mut by_id = std::collections::HashMap::new();
+        for file in files {
+            if let (Some(id), Some(path)) = (file.id, file.file_path.clone()) {
+                by_id.insert(id, (path, file.e_orientation.unwrap_or(1) as i32));
+            }
+        }
+        Ok(wanted
+            .into_iter()
+            .filter_map(|id| by_id.remove(&id).map(|(path, o)| (id, path, o)))
+            .collect())
+    })();
+
+    let queue = match queue {
+        Ok(queue) => queue,
+        Err(e) => {
+            crate::t_ocr::finish(&shared);
+            return Err(e);
+        }
+    };
+
+    let progress_handle = app_handle.clone();
+    let cancel_flag = shared.clone();
+    tauri::async_runtime::spawn(async move {
+        let result = crate::t_ocr::recognize_files(
+            queue,
+            |progress| {
+                let _ = progress_handle.emit("ocr-progress", progress);
+            },
+            || {
+                cancel_flag
+                    .cancelled
+                    .load(std::sync::atomic::Ordering::SeqCst)
+            },
+        )
+        .await;
+
+        crate::t_ocr::finish(&shared);
+
+        let payload = match result {
+            Ok(result) => OcrFinished { result: Some(result), error: None },
+            Err(error) => OcrFinished { result: None, error: Some(error) },
+        };
+        let _ = app_handle.emit("ocr-finished", payload);
+    });
+
+    Ok(())
+}
+
+/// Ask a running recognition pass to stop after the file it is on.
+#[tauri::command]
+pub fn cancel_recognize_text(state: State<crate::t_ocr::OcrCancellation>) -> Result<(), String> {
+    state
+        .0
+        .cancelled
+        .store(true, std::sync::atomic::Ordering::SeqCst);
+    Ok(())
+}
+
+/// Discard every recognised result for the current library.
+#[tauri::command]
+pub fn clear_recognized_text() -> Result<(), String> {
+    crate::t_ocr::clear_all()
 }
 
 /// Ask a running export to stop after the file it is on.

@@ -654,6 +654,7 @@
       "refresh_subfolders": "刷新子文件夹"
     },
     "file": {
+      "recognize_text": "识别文字…",
       "export_selected": "导出…",
       "new_folder": "新建文件夹",
       "view_in_new_window": "在新窗口中查看...",
@@ -1154,6 +1155,28 @@
       "use_external_with_app": "请尝试在 {app} 中打开。",
       "unknown": "未知错误"
     }
+  },
+  "ocr": {
+    "title": "识别文字",
+    "summary": "将读取 {count} 张图片中的文字。",
+    "explain": "识别结果存在本地，之后在搜索框输入文字就能找到对应的截图。用的是系统自带的识别引擎，不联网。",
+    "redo": "重新识别",
+    "redo_hint": "默认跳过已经读过的图片。",
+    "start": "开始识别",
+    "stop": "停止",
+    "working": "正在识别…",
+    "counts": "{processed}/{total} · 有文字 {withText} · 失败 {failed}",
+    "done": "已读取 {processed} 张，其中 {withText} 张含文字。",
+    "done_cancelled": "已停止，读取了 {processed} 张。",
+    "done_with_failures": "{withText} 张含文字，{failed} 张失败。",
+    "no_images": "所选项目中没有可识别的图片。",
+    "unavailable_platform": "当前系统暂不支持文字识别。",
+    "unavailable_language": "系统未安装可用的文字识别语言包。",
+    "unavailable_hint": "在 Windows 设置的「时间和语言 → 语言和区域」中为所需语言安装可选功能「光学字符识别」。",
+    "section": "文字识别",
+    "status": "已读取 {processed} 张，其中 {withText} 张含文字。",
+    "clear": "清除识别结果",
+    "cleared": "已清除识别结果。"
   },
   "export": {
     "title": "导出",

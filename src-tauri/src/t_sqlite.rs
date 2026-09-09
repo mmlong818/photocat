@@ -4436,8 +4436,17 @@ impl AFile {
         }
 
         if !params.search_file_name.is_empty() {
-            conditions.push("(a.name LIKE ? COLLATE NOCASE OR a.comments LIKE ? COLLATE NOCASE)".to_string());
+            // Also match words read out of the image itself, so a screenshot
+            // is findable by what it says. See t_ocr.
+            conditions.push(
+                "(a.name LIKE ? COLLATE NOCASE
+                  OR a.comments LIKE ? COLLATE NOCASE
+                  OR EXISTS (SELECT 1 FROM file_texts ft
+                             WHERE ft.file_id = a.id AND ft.text LIKE ? COLLATE NOCASE))"
+                    .to_string(),
+            );
             let pattern = format!("%{}%", params.search_file_name);
+            sql_params.push(Box::new(pattern.clone()));
             sql_params.push(Box::new(pattern.clone()));
             sql_params.push(Box::new(pattern));
         }

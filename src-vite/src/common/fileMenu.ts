@@ -5,6 +5,7 @@ import { DEFAULT_PLATFORM, getShortcutLabel, ShortcutActionId } from '@/common/s
 import {
   IconDownload,
   IconMonitor,
+  IconSearch,
   IconPrint,
   IconRefresh,
   IconHeart,
@@ -93,6 +94,12 @@ export const useFileMenuItems = (
         icon: markRaw(IconDownload),
         disabled: kind !== 'image' || selectionCount < 1,
         action: createAction('export-selected'),
+      },
+      {
+        label: String(localeMsg.value.menu.file.recognize_text || 'Recognize text...'),
+        icon: markRaw(IconSearch),
+        disabled: kind !== 'image' || selectionCount < 1,
+        action: createAction('recognize-text'),
       },
       externalAppMenu(externalAppKind),
     ];
@@ -277,6 +284,12 @@ export const useFileMenuItems = (
         icon: markRaw(IconDownload),
         hidden: f.file_type === 2,
         action: createAction('export-selected')
+      },
+      {
+        label: String(localeMsg.value.menu.file.recognize_text || 'Recognize text...'),
+        icon: markRaw(IconSearch),
+        hidden: f.file_type === 2,
+        action: createAction('recognize-text')
       },
       {
         label: isMac ? localeMsg.value.menu.file.reveal_in_finder : localeMsg.value.menu.file.reveal_in_file_explorer,

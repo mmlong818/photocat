@@ -34,6 +34,7 @@ mod t_menu;
 mod t_datadir;
 mod t_migration;
 mod t_motion_photo;
+mod t_ocr;
 mod t_pasteboard;
 mod t_protocol;
 mod t_similar;
@@ -138,6 +139,7 @@ async fn main() {
         .manage(t_similar::SimilarState::default())
         .manage(t_vectors::VectorCacheState::default())
         .manage(t_export::ExportCancellation::default())
+        .manage(t_ocr::OcrCancellation::default())
         .setup(|_app| {
             // The identifier decides where app data lives, so it has to be set
             // before any other code resolves a data path.
@@ -170,6 +172,12 @@ async fn main() {
             // Create the database on startup
             if let Err(e) = t_sqlite::create_db() {
                 eprintln!("Failed to initialize database: {}", e);
+            }
+
+            // The search query joins against this table, so it has to exist
+            // even on a library that has never had text recognised.
+            if let Err(e) = t_ocr::ensure_schema() {
+                eprintln!("Failed to initialize the recognised-text table: {}", e);
             }
 
             // Initialize video HTTP server for Linux
@@ -376,6 +384,10 @@ async fn main() {
             t_cmds::copy_edited_image,
             t_cmds::export_files,
             t_cmds::cancel_export,
+            t_cmds::get_ocr_status,
+            t_cmds::recognize_text,
+            t_cmds::cancel_recognize_text,
+            t_cmds::clear_recognized_text,
             t_cmds::copy_images,
             t_cmds::rename_file,
             t_cmds::move_file,
