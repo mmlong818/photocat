@@ -1588,5 +1588,8 @@
         "failed_install": "Error al instalar la actualización"
       }
     }
+  },
+  "startup": {
+    "data_migrated": "Se migraron {libraries} biblioteca(s) de la versión anterior."
   }
 }

@@ -1,0 +1,56 @@
+猫叔的图 (Maoshu Photos)
+========================
+
+This program is a fork of Lap, an open-source local photo manager.
+
+Upstream project
+----------------
+    Name:       Lap - Private Local Photo Manager
+    Author:     julyx10 <tiangle@gmail.com>
+    Repository: https://github.com/julyx10/lap
+    License:    GNU General Public License v3.0 or later
+
+Copyright
+---------
+    Copyright (C) 2025-2026 julyx10 and the Lap contributors
+    Copyright (C) 2026 the 猫叔的图 contributors
+
+This fork keeps the upstream engine — media indexing, thumbnail generation,
+RAW decoding, EXIF parsing, CLIP semantic search, face detection and
+clustering, duplicate detection, and the SQLite library schema — and adds a
+distinct interface and an additional workflow layer on top of it.
+
+License
+-------
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, either version 3 of the License, or (at your option) any later
+version.
+
+This program is distributed in the hope that it will be useful, but WITHOUT
+ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS
+FOR A PARTICULAR PURPOSE. See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+this program. If not, see <https://www.gnu.org/licenses/>.
+
+The complete license text is in the LICENSE file in this directory.
+
+Third-party components
+----------------------
+This program bundles or links the following, each under its own license:
+
+    FFmpeg / FFprobe        LGPL-2.1-or-later or GPL-2.0-or-later
+    LibRaw                  LGPL-2.1-or-later or CDDL-1.0
+    libjpeg-turbo           BSD-3-Clause / IJG
+    SQLite                  public domain
+    ONNX Runtime            MIT
+    Tauri                   MIT or Apache-2.0
+    Vue, Pinia, vue-i18n    MIT
+    Tailwind CSS, daisyUI   MIT
+    Leaflet                 BSD-2-Clause
+    GeoNames city data      CC BY 4.0 — https://www.geonames.org/
+
+Machine learning models bundled with this program (CLIP-style image and text
+encoders, RetinaFace detection, MobileFaceNet recognition) carry the licenses
+of their respective upstream projects.

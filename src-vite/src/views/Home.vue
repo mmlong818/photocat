@@ -173,6 +173,7 @@ import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { getName } from '@tauri-apps/api/app';
 import { invoke } from '@tauri-apps/api/core';
 import { config, libConfig } from '@/common/config';
+import { useToast } from '@/common/toast';
 import { useUIStore } from '@/stores/uiStore';
 import { isWin, isMac, isLinux, SCALE_VALUES } from '@/common/utils';
 import { matchesShortcut, ShortcutPlatform } from '@/common/shortcuts';
@@ -234,6 +235,7 @@ const SETTINGS_BASE_HEIGHT = 620;
 /// i18n
 const { locale, messages } = useI18n();
 const localeMsg = computed(() => messages.value[locale.value] as any);
+const toast = useToast();
 
 const uiStore = useUIStore();
 
@@ -428,6 +430,14 @@ onMounted(async () => {
 
   unlistenAlbumsRefreshed = await listen('albums-refreshed', () => {
     void checkLibraryEmpty();
+  });
+
+  // First launch after the app identifier changed: tell the user their
+  // existing libraries were carried over rather than silently reappearing.
+  takeMigrationReport().then((report: any) => {
+    if (report && Number(report.libraries) > 0) {
+      toast.success(t('startup.data_migrated', { libraries: report.libraries }));
+    }
   });
 
   try {

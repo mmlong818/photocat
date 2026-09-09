@@ -30,6 +30,7 @@ mod t_jxl;
 mod t_lens;
 mod t_libraw;
 mod t_menu;
+mod t_datadir;
 mod t_migration;
 mod t_motion_photo;
 mod t_pasteboard;
@@ -131,10 +132,22 @@ async fn main() {
         )))
         .manage(t_dedup::DedupState::default())
         .manage(t_cmds::LaunchFiles(std::sync::Mutex::new(launch_files)))
+        .manage(t_datadir::MigrationOutcome::default())
         .manage(t_similar::SimilarState::default())
         .setup(|_app| {
-            t_video::init_ffmpeg_path(&_app.handle());
+            // The identifier decides where app data lives, so it has to be set
+            // before any other code resolves a data path.
             t_config::set_app_identifier(&_app.config().identifier);
+
+            // First run under a renamed identifier: carry the previous
+            // installation's libraries and thumbnails across. No window is
+            // listening this early, so the result is stashed for the frontend
+            // to collect once it is ready.
+            if let Some(report) = t_datadir::migrate_from_legacy(&_app.config().identifier) {
+                _app.state::<t_datadir::MigrationOutcome>().set(report);
+            }
+
+            t_video::init_ffmpeg_path(&_app.handle());
             t_menu::install_app_menu(&_app.handle())?;
 
             #[cfg(not(target_os = "macos"))]
@@ -310,6 +323,7 @@ async fn main() {
             // files opened from the OS
             t_cmds::take_launch_files,
             t_cmds::resolve_external_file,
+            t_datadir::take_migration_report,
             // file query
             t_cmds::get_query_count_and_sum,
             t_cmds::get_query_time_line,

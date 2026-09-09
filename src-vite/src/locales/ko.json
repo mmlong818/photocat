@@ -1588,5 +1588,8 @@
         "failed_install": "업데이트 설치 실패"
       }
     }
+  },
+  "startup": {
+    "data_migrated": "이전 버전에서 라이브러리 {libraries}개를 이전했습니다."
   }
 }

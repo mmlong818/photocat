@@ -2146,3 +2146,14 @@ export async function resolveExternalFile(filePath) {
     return null;
   }
 }
+
+/// One-time report of data carried over from a previous bundle identifier.
+/// Returns null once it has been collected.
+export async function takeMigrationReport() {
+  try {
+    return await invoke('take_migration_report');
+  } catch (error) {
+    console.error('takeMigrationReport error:', error);
+    return null;
+  }
+}

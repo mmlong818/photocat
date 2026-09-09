@@ -1588,5 +1588,8 @@
         "failed_install": "更新のインストールに失敗しました"
       }
     }
+  },
+  "startup": {
+    "data_migrated": "以前のバージョンから {libraries} 個のライブラリを移行しました。"
   }
 }

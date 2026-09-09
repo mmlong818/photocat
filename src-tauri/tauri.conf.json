@@ -1,7 +1,7 @@
 {
   "productName": "猫叔的图",
   "version": "0.3.1",
-  "identifier": "com.julyx10.lap",
+  "identifier": "com.maoshu.photos",
   "build": {
     "beforeBuildCommand": "pnpm --dir ../src-vite build",
     "beforeDevCommand": "pnpm --dir ../src-vite dev",

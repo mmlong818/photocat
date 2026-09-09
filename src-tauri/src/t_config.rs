@@ -437,7 +437,7 @@ fn get_app_data_folder_name() -> String {
     let identifier = APP_IDENTIFIER
         .get()
         .cloned()
-        .unwrap_or_else(|| "com.julyx10.lap".to_string());
+        .unwrap_or_else(|| "com.maoshu.photos".to_string());
 
     if cfg!(debug_assertions) {
         format!("{}.debug", identifier)

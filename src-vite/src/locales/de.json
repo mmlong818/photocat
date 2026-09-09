@@ -1588,5 +1588,8 @@
         "failed_install": "Fehler beim Installieren des Updates"
       }
     }
+  },
+  "startup": {
+    "data_migrated": "{libraries} Mediathek(en) aus der Vorversion übernommen."
   }
 }

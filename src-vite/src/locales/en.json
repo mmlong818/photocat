@@ -1588,5 +1588,8 @@
         "failed_install": "Failed to install update"
       }
     }
+  },
+  "startup": {
+    "data_migrated": "Migrated {libraries} librar(y/ies) from the previous version."
   }
 }

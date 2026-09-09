@@ -1588,5 +1588,8 @@
         "failed_install": "Falha ao instalar atualização"
       }
     }
+  },
+  "startup": {
+    "data_migrated": "{libraries} biblioteca(s) migrada(s) da versão anterior."
   }
 }

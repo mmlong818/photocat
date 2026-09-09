@@ -1588,5 +1588,8 @@
         "failed_install": "安装更新失败"
       }
     }
+  },
+  "startup": {
+    "data_migrated": "已从旧版本迁移 {libraries} 个图库的数据。"
   }
 }
