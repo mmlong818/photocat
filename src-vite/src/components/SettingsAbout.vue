@@ -22,8 +22,10 @@
           <div class="flex items-center gap-2">
             <span>{{ displayVersion }}</span>
             <button
-              class="badge badge-sm border-0 px-2 py-2 font-medium transition-colors hover:text-primary"
-              :class="isUpdateActionEnabled ? 'badge-primary cursor-pointer' : 'badge-neutral/60 cursor-pointer'"
+              class="badge badge-sm border-0 px-2 py-2 font-medium transition-colors"
+              :class="isUpdateActionEnabled
+                ? 'badge-primary cursor-pointer hover:brightness-110'
+                : 'badge-neutral/60 cursor-pointer hover:text-primary'"
               :disabled="isInstallingUpdate || isCheckingUpdate"
               :title="updateButtonTooltip"
               @click="handleUpdateAction"

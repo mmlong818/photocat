@@ -24,7 +24,6 @@ import os
 import shutil
 import subprocess
 import sys
-import urllib.parse
 import zipfile
 from datetime import datetime, timezone
 from pathlib import Path
@@ -35,6 +34,11 @@ OUT = ROOT / "dist"
 # Only x64 Windows is built here. Adding an arch means another entry in
 # PLATFORMS and another build on that machine; the manifest merges by key.
 PLATFORM_KEY = "windows-x86_64"
+# GitHub strips non-ASCII from release asset file names, so an installer called
+# 猫叔的图_0.3.2_x64-setup.exe arrives as _0.3.2_x64-setup.exe and every URL
+# built from the original name 404s. Upload under ASCII names instead; the
+# product name inside the installer is unaffected.
+ASSET_STEM = "photocat"
 
 
 def die(message):
@@ -105,8 +109,10 @@ def portable_zip(version, product):
     if not binary.is_file():
         die("release binary not found: %s" % binary)
 
+    # The folder inside the archive keeps the product's real name; only the
+    # archive itself has to survive GitHub's ASCII-only asset names.
     name = "%s-便携版-%s" % (product, version)
-    target = OUT / (name + ".zip")
+    target = OUT / ("%s-portable-%s.zip" % (ASSET_STEM, version))
     with zipfile.ZipFile(target, "w", zipfile.ZIP_DEFLATED) as archive:
         archive.write(binary, "%s/%s.exe" % (name, product))
         for folder in ("ffmpeg", "models"):
@@ -129,7 +135,11 @@ PORTABLE_README = (
 )
 
 
-def manifest(version, installer, signature, notes, repo):
+def installer_asset_name(version):
+    return "%s_%s_x64-setup.exe" % (ASSET_STEM, version)
+
+
+def manifest(version, signature, notes, repo):
     """The document the updater fetches to decide whether to offer an update."""
     base = "%s/releases/download/v%s/" % (repo, version)
     return {
@@ -138,9 +148,9 @@ def manifest(version, installer, signature, notes, repo):
         "pub_date": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "platforms": {
             PLATFORM_KEY: {
-                # The file name carries non-ASCII characters, so the URL in the
-                # manifest has to be percent-encoded or the download 404s.
-                "url": base + urllib.parse.quote(installer.name),
+                # Must match the uploaded asset name exactly, or the updater
+                # finds an update it then cannot download.
+                "url": base + installer_asset_name(version),
                 "signature": signature.read_text(encoding="utf-8").strip() if signature else "",
             }
         },
@@ -187,15 +197,19 @@ def main():
 
     latest = OUT / "latest.json"
     with open(latest, "w", encoding="utf-8", newline="\n") as handle:
-        json.dump(manifest(version, installer, signature, notes, repo),
+        json.dump(manifest(version, signature, notes, repo),
                   handle, ensure_ascii=False, indent=2)
         handle.write("\n")
 
-    staged = [installer, latest, archive]
+    # Everything uploaded is staged in dist/ under its ASCII name, so what
+    # the manifest points at and what GitHub stores cannot drift apart.
+    staged_installer = OUT / installer_asset_name(version)
+    shutil.copy2(installer, staged_installer)
+    staged = [staged_installer, latest, archive]
     if signature:
-        staged.append(signature)
-        shutil.copy2(signature, OUT / signature.name)
-    shutil.copy2(installer, OUT / installer.name)
+        staged_signature = OUT / (installer_asset_name(version) + ".sig")
+        shutil.copy2(signature, staged_signature)
+        staged.append(staged_signature)
 
     print("\nversion %s, repository %s" % (version, repo))
     for path in staged:
