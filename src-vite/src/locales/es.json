@@ -1732,7 +1732,8 @@
       }
     }
   },
-  "browse":   {
+  "browse": {
+    "video_not_supported": "La vista rápida solo muestra imágenes. Añada esta carpeta a la biblioteca para reproducir vídeos.",
     "title": "Explorar",
     "up": "Subir",
     "back": "Volver",

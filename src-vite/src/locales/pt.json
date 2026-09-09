@@ -1732,7 +1732,8 @@
       }
     }
   },
-  "browse":   {
+  "browse": {
+    "video_not_supported": "A visualização rápida mostra apenas imagens. Adicione esta pasta à biblioteca para reproduzir vídeos.",
     "title": "Explorar",
     "up": "Acima",
     "back": "Voltar",

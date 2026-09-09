@@ -3367,6 +3367,12 @@ pub fn browse_folder(
     crate::t_browse::list_folder(&path, crate::t_browse::SortBy::from_i64(sort), descending)
 }
 
+/// Whether the browse window would show this file. Videos would not.
+#[tauri::command]
+pub fn browse_supports(path: String) -> bool {
+    crate::t_browse::is_browsable(&path)
+}
+
 /// The folder holding a given file, so opening a file can open its folder.
 #[tauri::command]
 pub fn browse_parent_of(path: String) -> Option<String> {

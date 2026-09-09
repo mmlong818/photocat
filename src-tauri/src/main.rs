@@ -490,6 +490,7 @@ async fn main() {
             t_cmds::get_model_status,
             t_cmds::is_portable_build,
             t_cmds::browse_folder,
+            t_cmds::browse_supports,
             t_cmds::browse_parent_of,
             t_cmds::get_image_search_model_status,
             t_cmds::set_image_search_model,

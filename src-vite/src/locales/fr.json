@@ -1732,7 +1732,8 @@
       }
     }
   },
-  "browse":   {
+  "browse": {
+    "video_not_supported": "L'aperçu rapide n'affiche que des images. Ajoutez ce dossier à la bibliothèque pour lire des vidéos.",
     "title": "Parcourir",
     "up": "Remonter",
     "back": "Retour",

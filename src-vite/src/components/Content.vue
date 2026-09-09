@@ -770,7 +770,7 @@ import { ask, open as openDialog } from '@tauri-apps/plugin-dialog';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/common/toast';
-import { openBrowseWindow } from '@/common/browse';
+import { openBrowseWindow, browseSupports } from '@/common/browse';
 import { useUIStore } from '@/stores/uiStore';
 import { getAlbum, getAllAlbums, recountAlbum, getQueryCountAndSum, getQueryTimeLine, getQueryFiles, getFilesByIds, getGroupedQueryRows, getGroupedFilePosition, getGroupFileIds, getQueryFileIds, syncAlbumFolderMtimes,
          getSmartQueryCountAndSum, getSmartQueryTimeLine, getSmartQueryFiles, getSmartGroupedQueryRows, getSmartGroupFileIds, getSmartQueryFileIds, getSmartQueryFilePosition,
@@ -1227,6 +1227,12 @@ async function openExternalFiles(paths: string[]) {
   // Not inside any album. Reading one photo should not turn its folder into
   // part of the library, so open the folder in the browse window instead and
   // land on this file. Adding it is offered there, as a deliberate act.
+  if (!(await browseSupports(result.file_path))) {
+    // Videos are playable once they are in the library, just not by browsing.
+    // Long enough to read: it explains why nothing opened and what to do.
+    toast.warning(t('browse.video_not_supported'), { duration: 5000 });
+    return;
+  }
   await openBrowseWindow(result.folder_path, result.file_path);
 }
 

@@ -1732,7 +1732,8 @@
       }
     }
   },
-  "browse":   {
+  "browse": {
+    "video_not_supported": "Quick view shows pictures only. Add this folder to the library to play videos.",
     "title": "Browse",
     "up": "Up",
     "back": "Back",

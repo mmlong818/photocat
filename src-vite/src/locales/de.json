@@ -1732,7 +1732,8 @@
       }
     }
   },
-  "browse":   {
+  "browse": {
+    "video_not_supported": "Die Schnellansicht zeigt nur Bilder. Fügen Sie diesen Ordner zur Mediathek hinzu, um Videos abzuspielen.",
     "title": "Durchsuchen",
     "up": "Nach oben",
     "back": "Zurück",

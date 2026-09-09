@@ -7,10 +7,14 @@
 //! I will never look at again" — there, being asked to import first is the
 //! whole complaint.
 //!
-//! So this module addresses pictures by path instead. It lists a directory,
-//! decodes any file the app can read, and caches thumbnails on disk keyed by
-//! the file's own identity rather than by a row that does not exist. Nothing
-//! here writes to the library database, and browsing leaves no trace in it.
+//! So this module addresses pictures by path instead. Pictures only: a video
+//! needs a player, a position and a volume control, none of which belong in a
+//! window built to show one frame and get out of the way.
+//!
+//! It lists a directory, decodes any picture the app can read, and caches
+//! thumbnails on disk keyed by the file's own identity rather than by a row
+//! that does not exist. Nothing here writes to the library database, and
+//! browsing leaves no trace in it.
 //!
 //! The cache is the one piece of state it does own, so it is bounded: entries
 //! are pruned oldest-first once the directory passes [`CACHE_LIMIT_BYTES`].
@@ -31,7 +35,7 @@ const THUMBNAIL_SIZE: u32 = 256;
 /// How large the on-disk thumbnail cache may grow before old entries go.
 const CACHE_LIMIT_BYTES: u64 = 512 * 1024 * 1024;
 
-/// One picture or video in the browsed folder.
+/// One picture in the browsed folder.
 #[derive(Debug, Clone, Serialize)]
 pub struct BrowseFile {
     pub name: String,
@@ -39,7 +43,8 @@ pub struct BrowseFile {
     pub size: u64,
     /// Seconds since the epoch, or 0 when the filesystem will not say.
     pub modified: i64,
-    /// Matches the rest of the app: 1 = image, 2 = video, 3 = RAW.
+    /// Matches the rest of the app, but only 1 (image) and 3 (RAW) appear
+    /// here: browsing is for looking at pictures, and a video needs a player.
     pub file_type: i64,
     /// Identifies this exact revision of the file, for cache busting.
     pub signature: String,
@@ -146,7 +151,16 @@ fn extension_of(name: &str) -> String {
         .unwrap_or_default()
 }
 
-/// List one directory: its subdirectories, and the media the app can display.
+/// Whether browsing would show this file at all.
+///
+/// Listing and this share one rule, so a file handed to the app from outside
+/// can be checked before a window is opened for it: a video passed in through
+/// "Open with" would otherwise land on a folder view it is missing from.
+pub fn is_browsable(path: &str) -> bool {
+    matches!(t_utils::get_file_type(path), Some(1) | Some(3))
+}
+
+/// List one directory: its subdirectories, and the pictures in it.
 ///
 /// Not recursive. Browsing is a per-folder act, and walking a whole tree to
 /// show one folder is the kind of surprise that makes an app feel slow.
@@ -187,7 +201,9 @@ pub fn list_folder(dir: &str, sort: SortBy, descending: bool) -> Result<BrowseLi
         let Some(file_type) = t_utils::get_file_type(&path_str) else {
             continue;
         };
-        if !(1..=3).contains(&file_type) {
+        // Pictures only. Videos (type 2) belong to the library's player, not
+        // to a window whose whole job is to show one frame and move on.
+        if !is_browsable(&path_str) {
             continue;
         }
 
@@ -278,10 +294,10 @@ pub fn thumbnail(path: &str, signature: &str) -> Result<Vec<u8>, String> {
 
     let file_type = t_utils::get_file_type(path).unwrap_or(0);
     let orientation = t_image::get_image_orientation(path);
-    let generated = match file_type {
-        3 => t_image::get_raw_thumbnail(path, orientation, THUMBNAIL_SIZE, false),
-        2 => crate::t_video::get_video_thumbnail_sync(path, THUMBNAIL_SIZE, None, None),
-        _ => t_image::get_image_thumbnail(path, orientation, THUMBNAIL_SIZE),
+    let generated = if file_type == 3 {
+        t_image::get_raw_thumbnail(path, orientation, THUMBNAIL_SIZE, false)
+    } else {
+        t_image::get_image_thumbnail(path, orientation, THUMBNAIL_SIZE)
     };
 
     let data = generated
@@ -513,20 +529,33 @@ mod tests {
     }
 
     #[test]
+    fn only_pictures_are_browsable() {
+        assert!(is_browsable("D:/x/a.jpg"));
+        assert!(is_browsable("D:/x/a.cr3"), "RAW counts as a picture");
+        assert!(!is_browsable("D:/x/a.mp4"), "browsing does not do video");
+        assert!(!is_browsable("D:/x/a.txt"));
+    }
+
+    #[test]
     fn listing_a_missing_folder_is_an_error_not_an_empty_list() {
         assert!(list_folder("D:/definitely-not-here-9182", SortBy::Name, false).is_err());
     }
 
     #[test]
-    fn a_real_folder_lists_only_media() {
+    fn a_real_folder_lists_only_pictures() {
         let dir = std::env::temp_dir().join("lap-browse-test");
         let _ = fs::create_dir_all(&dir);
         fs::write(dir.join("note.txt"), b"not a picture").unwrap();
+        fs::write(dir.join("clip.mp4"), b"pretend video").unwrap();
         fs::write(dir.join("a.jpg"), b"pretend jpeg").unwrap();
         let _ = fs::create_dir_all(dir.join("sub"));
 
         let listing = list_folder(&dir.to_string_lossy(), SortBy::Name, false).unwrap();
-        assert_eq!(names(&listing.files), ["a.jpg"], "text files are not media");
+        assert_eq!(
+            names(&listing.files),
+            ["a.jpg"],
+            "only pictures: no text files, no videos"
+        );
         assert!(listing.folders.iter().any(|f| f.name == "sub"));
         assert!(listing.parent.is_some());
 

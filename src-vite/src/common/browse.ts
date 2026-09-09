@@ -53,6 +53,20 @@ export async function browseFolder(
   return await invoke('browse_folder', { path, sort, descending });
 }
 
+/**
+ * Whether the browse window would show this file. Videos would not, and
+ * opening a folder that quietly omits the file the user asked for is worse
+ * than saying so.
+ */
+export async function browseSupports(path: string): Promise<boolean> {
+  try {
+    return await invoke('browse_supports', { path });
+  } catch (error) {
+    console.error('browseSupports error:', error);
+    return false;
+  }
+}
+
 export async function browseParentOf(path: string): Promise<string | null> {
   try {
     return await invoke('browse_parent_of', { path });
