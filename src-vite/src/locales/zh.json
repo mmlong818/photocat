@@ -794,6 +794,13 @@
       "ok": "创建",
       "success": "已创建文件夹「{name}」。"
     },
+    "open_external": {
+      "title": "打开图片",
+      "message": "「{name}」不在图库中。\n是否将其所在文件夹「{folder}」添加为相册并打开？",
+      "ok": "添加并打开",
+      "unsupported": "不支持的文件格式。",
+      "error": "无法打开该文件。"
+    },
     "move_to": {
       "title": "移动 '{source}' 到",
       "content": "选择目标文件夹:",

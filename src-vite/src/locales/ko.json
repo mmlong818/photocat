@@ -794,6 +794,13 @@
       "ok": "만들기",
       "success": "폴더 \"{name}\"을(를) 만들었습니다."
     },
+    "open_external": {
+      "title": "이미지 열기",
+      "message": "\"{name}\"은(는) 라이브러리에 없습니다.\n폴더 \"{folder}\"를 앨범으로 추가하고 열까요?",
+      "ok": "추가 후 열기",
+      "unsupported": "지원하지 않는 파일 형식입니다.",
+      "error": "파일을 열 수 없습니다."
+    },
     "move_to": {
       "title": "'{source}' 이동",
       "content": "대상 폴더 선택:",

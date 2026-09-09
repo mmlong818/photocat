@@ -794,6 +794,13 @@
       "ok": "Criar",
       "success": "Pasta \"{name}\" criada."
     },
+    "open_external": {
+      "title": "Abrir imagem",
+      "message": "\"{name}\" não está na biblioteca.\nAdicionar a pasta \"{folder}\" como álbum e abri-la?",
+      "ok": "Adicionar e abrir",
+      "unsupported": "Formato de arquivo não suportado.",
+      "error": "Não foi possível abrir o arquivo."
+    },
     "move_to": {
       "title": "Mover '{source}' para",
       "content": "Selecione o destino:",

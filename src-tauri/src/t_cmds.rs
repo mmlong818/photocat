@@ -3246,3 +3246,143 @@ pub fn restore_databases(
 ) -> Result<t_storage::RestoreResult, String> {
     t_storage::restore_databases(&backup_path, &selections)
 }
+
+// ---------------------------------------------------------------------------
+// Files opened from outside the app (Explorer / Finder / command line)
+// ---------------------------------------------------------------------------
+
+/// File paths passed on the command line when the process was launched.
+/// Drained once by the frontend via `take_launch_files` after it is ready.
+#[derive(Default)]
+pub struct LaunchFiles(pub std::sync::Mutex<Vec<String>>);
+
+/// Turn raw argv entries into absolute paths of existing files. Flags and
+/// non-existent entries are dropped; relative paths resolve against `cwd`.
+pub fn collect_file_args<I>(args: I, cwd: Option<&Path>) -> Vec<String>
+where
+    I: IntoIterator<Item = String>,
+{
+    args.into_iter()
+        .filter(|arg| !arg.is_empty() && !arg.starts_with('-'))
+        .filter_map(|arg| {
+            let raw = PathBuf::from(&arg);
+            let abs = if raw.is_absolute() {
+                raw
+            } else {
+                match cwd {
+                    Some(dir) => dir.join(raw),
+                    None => std::env::current_dir().ok()?.join(raw),
+                }
+            };
+            abs.is_file().then(|| abs.to_string_lossy().to_string())
+        })
+        .collect()
+}
+
+#[tauri::command]
+pub fn take_launch_files(state: State<LaunchFiles>) -> Vec<String> {
+    match state.0.lock() {
+        Ok(mut files) => std::mem::take(&mut *files),
+        Err(_) => Vec::new(),
+    }
+}
+
+/// Outcome of mapping an external file onto the library.
+#[derive(Serialize)]
+pub struct ExternalFileResolution {
+    pub file_path: String,
+    pub folder_path: String,
+    /// The extension is one the app can display (image or video).
+    pub supported: bool,
+    /// Album whose root contains the file, if any.
+    pub album: Option<Album>,
+    /// Library row for the file. Present only when `album` is present; the
+    /// folder and file rows are created on demand so the viewer can open it
+    /// before the album is (re)indexed.
+    pub file: Option<AFile>,
+}
+
+fn normalize_for_compare(path: &str) -> String {
+    let unified = path.replace('\\', "/");
+    let trimmed = unified.trim_end_matches('/');
+    if cfg!(windows) {
+        trimmed.to_lowercase()
+    } else {
+        trimmed.to_string()
+    }
+}
+
+fn path_is_within(child: &str, root: &str) -> bool {
+    let child = normalize_for_compare(child);
+    let root = normalize_for_compare(root);
+    child == root || child.starts_with(&format!("{}/", root))
+}
+
+/// Resolve a file the OS asked us to open. Finds the album that contains it,
+/// makes sure the folder/file rows exist, and authorizes the folder for the
+/// asset protocol so the viewer can load it.
+#[tauri::command]
+pub fn resolve_external_file(
+    app_handle: tauri::AppHandle,
+    file_path: &str,
+) -> Result<ExternalFileResolution, String> {
+    let path = Path::new(file_path);
+    if !path.is_file() {
+        return Err(format!("File not found: {}", file_path));
+    }
+    let folder_path = path
+        .parent()
+        .map(|p| p.to_string_lossy().to_string())
+        .ok_or_else(|| format!("File has no parent folder: {}", file_path))?;
+
+    let file_type = t_utils::get_file_type(file_path);
+    let supported = matches!(file_type, Some(1) | Some(2));
+
+    let mut resolution = ExternalFileResolution {
+        file_path: file_path.to_string(),
+        folder_path: folder_path.clone(),
+        supported,
+        album: None,
+        file: None,
+    };
+    if !supported {
+        return Ok(resolution);
+    }
+
+    // Longest album root that contains the folder.
+    let album = Album::get_all_albums()?
+        .into_iter()
+        .filter(|album| path_is_within(&folder_path, &album.path))
+        .max_by_key(|album| album.path.len());
+    let Some(album) = album else {
+        return Ok(resolution);
+    };
+    let album_id = album.id.unwrap_or(0);
+    if album_id <= 0 {
+        return Ok(resolution);
+    }
+
+    t_utils::authorize_directory_scope(&app_handle, &folder_path)?;
+
+    let folder = match AFolder::fetch(&folder_path)? {
+        Some(folder) => folder,
+        None => AFolder::add_to_db(album_id, &folder_path)?,
+    };
+    let folder_id = folder.id.unwrap_or(0);
+    if folder_id <= 0 {
+        return Err(format!("Folder row has no id: {}", folder_path));
+    }
+
+    let file = match AFile::fetch(folder_id, file_path)? {
+        Some(file) => Some(file),
+        None => {
+            let now = chrono::Utc::now().timestamp_millis();
+            AFile::add_to_db(folder_id, file_path, file_type.unwrap_or(1), now)?;
+            AFile::fetch(folder_id, file_path)?
+        }
+    };
+
+    resolution.album = Some(album);
+    resolution.file = file;
+    Ok(resolution)
+}

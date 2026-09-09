@@ -555,6 +555,18 @@
     @reset="newFolderError = ''"
   />
 
+  <!-- file opened from the OS that is not in the library yet -->
+  <MessageBox
+    v-if="showOpenExternalMsgbox && pendingExternalFile"
+    :title="$t('msgbox.open_external.title')"
+    :message="$t('msgbox.open_external.message', { name: getFileName(pendingExternalFile.filePath), folder: getFolderName(pendingExternalFile.folderPath) })"
+    :OkText="$t('msgbox.open_external.ok')"
+    :cancelText="$t('msgbox.cancel')"
+    :isLoading="isOpeningExternalFile"
+    @ok="onOpenExternalOk"
+    @cancel="closeOpenExternalMsgbox"
+  />
+
   <!-- move to -->
   <MoveTo
     v-if="showMoveTo"
@@ -752,7 +764,8 @@ import { getAlbum, getAllAlbums, recountAlbum, getQueryCountAndSum, getQueryTime
          updateFileInfo, importFile, importUrl, importFileBytes, getDragPayload, importClipboard, addFileToDb, checkFileExists, cancelIndexing as cancelIndexingApi, selectFolder, getFacesForFile, listenFaceIndexProgress,
          openFilesWithApp, getAppConfig, getIndexRecoveryInfo, clearIndexRecoveryInfo, setLastSelectedItemIndex,
          dedupDelete, getQueryFilePosition, getFolderSearchExcluded,
-         listCollections, createCollection, addFilesToCollection, removeFilesFromCollection, getCollectionCountAndSum, getCollectionFiles, getCollectionGroupedQueryRows, getCollectionGroupFileIds, getCollectionQueryFileIds, fetchFolder, isDirectoryAccessible, checkAlbumAccessibility, addTagToFile, createFolder } from '@/common/api';
+         listCollections, createCollection, addFilesToCollection, removeFilesFromCollection, getCollectionCountAndSum, getCollectionFiles, getCollectionGroupedQueryRows, getCollectionGroupFileIds, getCollectionQueryFileIds, fetchFolder, isDirectoryAccessible, checkAlbumAccessibility, addTagToFile, createFolder,
+         addAlbum, takeLaunchFiles, resolveExternalFile } from '@/common/api';
 import { config, libConfig } from '@/common/config';
 import {
   gridSizeFromPosition,
@@ -1168,6 +1181,95 @@ async function onNewFolderOk(nameArg: string) {
     const album = await getAlbum(albumId);
     if (album) await tauriEmit('albums-refreshed', { albums: [album], refreshFolders: true });
   }
+}
+
+// —— Files handed to us by the OS (Explorer "Open with" / double-click / argv) ——
+let unlistenOpenExternalFiles: (() => void) | null = null;
+const showOpenExternalMsgbox = ref(false);
+const pendingExternalFile = ref<{ filePath: string; folderPath: string } | null>(null);
+const isOpeningExternalFile = ref(false);
+
+function getFileName(path: string) {
+  return String(path || '').split(/[\\/]/).pop() || path;
+}
+
+function closeOpenExternalMsgbox() {
+  if (isOpeningExternalFile.value) return;
+  showOpenExternalMsgbox.value = false;
+  pendingExternalFile.value = null;
+}
+
+// Entry point for both the launch argv and the single-instance forward.
+async function openExternalFiles(paths: string[]) {
+  const filePath = (Array.isArray(paths) ? paths : []).find((p) => typeof p === 'string' && p.length > 0);
+  if (!filePath) return;
+
+  const result = await resolveExternalFile(filePath);
+  if (!result) {
+    toast.error(t('msgbox.open_external.error'));
+    return;
+  }
+  if (!result.supported) {
+    toast.error(t('msgbox.open_external.unsupported'));
+    return;
+  }
+  if (result.file) {
+    await showExternalFileInViewer(result.file);
+    return;
+  }
+  // Not inside any album: offer to add its folder as a new album.
+  pendingExternalFile.value = { filePath: result.file_path, folderPath: result.folder_path };
+  showOpenExternalMsgbox.value = true;
+}
+
+async function onOpenExternalOk() {
+  const pending = pendingExternalFile.value;
+  if (!pending || isOpeningExternalFile.value) return;
+  isOpeningExternalFile.value = true;
+  try {
+    const album = await addAlbum(pending.folderPath);
+    if (!album) {
+      toast.error(t('msgbox.open_external.error'));
+      return;
+    }
+    await tauriEmit('albums-refreshed');
+    await tauriEmit('library-total-refreshed');
+
+    // Register just this file so the viewer can open it right away, then let
+    // the normal indexing queue pick up the rest of the folder.
+    const result = await resolveExternalFile(pending.filePath);
+    if (result?.file) {
+      await showExternalFileInViewer(result.file);
+    } else {
+      toast.error(t('msgbox.open_external.error'));
+    }
+    libConfig.index.status = 1;
+    if (!libConfig.index.albumQueue.includes(album.id)) {
+      libConfig.index.albumQueue.push(album.id);
+    }
+  } finally {
+    isOpeningExternalFile.value = false;
+    showOpenExternalMsgbox.value = false;
+    pendingExternalFile.value = null;
+  }
+}
+
+// Browse the file's folder and open the image viewer on that file.
+async function showExternalFileInViewer(file: any) {
+  const folderPath = getFolderPath(String(file?.file_path || ''));
+  if (!folderPath || !file?.album_id) return;
+
+  await enterAlbumPreviewMode(file, folderPath);
+
+  const position = await getCurrentQueryFilePosition(Number(file.id));
+  const targetIndex = typeof position === 'number' && position >= 0 ? position : 0;
+  if (targetIndex > 0) {
+    await fetchDataRange(targetIndex, targetIndex + 2);
+  }
+  selectedItemIndex.value = targetIndex;
+  await nextTick();
+  gridViewRef.value?.scrollToItem(targetIndex);
+  await openImageViewer(targetIndex, true);
 }
 
 const selectionMenuItems = useFileMenuItems(
@@ -5358,6 +5460,14 @@ onMounted( async() => {
     }
   });
 
+  unlistenOpenExternalFiles = await listen('open-external-files', (event: any) => {
+    void openExternalFiles(event?.payload?.paths || []);
+  });
+  // Files passed on the command line at launch (double-click in Explorer).
+  takeLaunchFiles().then((files) => {
+    if (files.length > 0) void openExternalFiles(files);
+  });
+
   unlistenImageEditor = await listen('message-from-image-editor', async (event: any) => {
     const { type, saveAsNew, filePath, sourceFileId } = event.payload as any;
     const sourceId = Number(sourceFileId || 0);
@@ -5634,6 +5744,7 @@ onBeforeUnmount(() => {
   // unlisten
   unlistenImageViewer();
   if (unlistenImageEditor) unlistenImageEditor();
+  if (unlistenOpenExternalFiles) unlistenOpenExternalFiles();
   if (unlistenKeydown) unlistenKeydown();
   if (unlistenTriggerNextAlbum) unlistenTriggerNextAlbum();
   if (unlistenIndexProgress) unlistenIndexProgress();
@@ -7705,7 +7816,7 @@ function handleNavigatePerson(payload: { personId: number; personName: string })
   void enterPersonTempView(Number(payload?.personId || 0), payload?.personName || '');
 }
 
-function enterAlbumPreviewMode(file: any, targetFolderPath?: string) {
+function enterAlbumPreviewMode(file: any, targetFolderPath?: string): Promise<void> | undefined {
   if (!file.album_id) return;
   const folderPath = targetFolderPath || getFolderPath(file.file_path);
   if (!folderPath) return;
@@ -7748,7 +7859,7 @@ function enterAlbumPreviewMode(file: any, targetFolderPath?: string) {
     gridViewRef.value.scrollToPosition(0);
   }
   
-  getFileList({ searchFolder: folderPath }, requestId);
+  return getFileList({ searchFolder: folderPath }, requestId);
 }
 
 function exitTempViewMode() {

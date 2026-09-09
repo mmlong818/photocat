@@ -794,6 +794,13 @@
       "ok": "Erstellen",
       "success": "Ordner \"{name}\" erstellt."
     },
+    "open_external": {
+      "title": "Bild öffnen",
+      "message": "„{name}“ ist nicht in der Bibliothek.\nDen Ordner „{folder}“ als Album hinzufügen und öffnen?",
+      "ok": "Hinzufügen und öffnen",
+      "unsupported": "Nicht unterstütztes Dateiformat.",
+      "error": "Die Datei konnte nicht geöffnet werden."
+    },
     "move_to": {
       "title": "Verschiebe '{source}' nach",
       "content": "Zielordner wählen:",

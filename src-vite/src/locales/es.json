@@ -794,6 +794,13 @@
       "ok": "Crear",
       "success": "Carpeta \"{name}\" creada."
     },
+    "open_external": {
+      "title": "Abrir imagen",
+      "message": "«{name}» no está en la biblioteca.\n¿Añadir su carpeta «{folder}» como álbum y abrirla?",
+      "ok": "Añadir y abrir",
+      "unsupported": "Formato de archivo no compatible.",
+      "error": "No se pudo abrir el archivo."
+    },
     "move_to": {
       "title": "Mover '{source}' a",
       "content": "Elige destino:",

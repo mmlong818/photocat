@@ -51,6 +51,90 @@
     "active": true,
     "category": "Graphics and Design",
     "targets": "all",
+    "fileAssociations": [
+      {
+        "ext": ["jpg", "jpeg", "jfif"],
+        "name": "JPEG Image",
+        "description": "JPEG Image",
+        "mimeType": "image/jpeg",
+        "role": "Viewer"
+      },
+      {
+        "ext": ["png"],
+        "name": "PNG Image",
+        "description": "PNG Image",
+        "mimeType": "image/png",
+        "role": "Viewer"
+      },
+      {
+        "ext": ["gif"],
+        "name": "GIF Image",
+        "description": "GIF Image",
+        "mimeType": "image/gif",
+        "role": "Viewer"
+      },
+      {
+        "ext": ["bmp"],
+        "name": "Bitmap Image",
+        "description": "Bitmap Image",
+        "mimeType": "image/bmp",
+        "role": "Viewer"
+      },
+      {
+        "ext": ["webp"],
+        "name": "WebP Image",
+        "description": "WebP Image",
+        "mimeType": "image/webp",
+        "role": "Viewer"
+      },
+      {
+        "ext": ["tif", "tiff"],
+        "name": "TIFF Image",
+        "description": "TIFF Image",
+        "mimeType": "image/tiff",
+        "role": "Viewer"
+      },
+      {
+        "ext": ["avif"],
+        "name": "AVIF Image",
+        "description": "AVIF Image",
+        "mimeType": "image/avif",
+        "role": "Viewer"
+      },
+      {
+        "ext": ["heic", "heif", "hif"],
+        "name": "HEIF Image",
+        "description": "HEIF Image",
+        "mimeType": "image/heif",
+        "role": "Viewer"
+      },
+      {
+        "ext": ["jxl"],
+        "name": "JPEG XL Image",
+        "description": "JPEG XL Image",
+        "mimeType": "image/jxl",
+        "role": "Viewer"
+      },
+      {
+        "ext": ["ico"],
+        "name": "Icon Image",
+        "description": "Windows Icon",
+        "mimeType": "image/x-icon",
+        "role": "Viewer"
+      },
+      {
+        "ext": ["psd", "exr", "hdr", "tga", "dds", "qoi", "jp2", "j2k", "dpx", "fits"],
+        "name": "Image",
+        "description": "Image",
+        "role": "Viewer"
+      },
+      {
+        "ext": ["cr2", "cr3", "nef", "arw", "raf", "rw2", "orf", "pef", "dng", "srw", "rwl", "3fr", "iiq"],
+        "name": "Camera RAW Image",
+        "description": "Camera RAW Image",
+        "role": "Viewer"
+      }
+    ],
     "createUpdaterArtifacts": true,
     "icon": [
       "icons/icon.png",

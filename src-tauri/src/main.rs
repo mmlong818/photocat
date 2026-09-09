@@ -10,7 +10,7 @@
  * author:  julyx10
  * date:    2024-08-08
  */
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 use tauri_plugin_aptabase::EventTracker;
 
 mod t_ai;
@@ -41,6 +41,15 @@ mod t_utils;
 mod t_video;
 
 /// The main function is the entry point for the Tauri application.
+/// Bring the main window to the front (used when the OS hands us a file).
+fn focus_main_window(app: &tauri::AppHandle) {
+    if let Some(window) = app.get_webview_window("main") {
+        let _ = window.show();
+        let _ = window.unminimize();
+        let _ = window.set_focus();
+    }
+}
+
 #[tokio::main]
 async fn main() {
     std::panic::set_hook(Box::new(|panic_info| {
@@ -59,7 +68,23 @@ async fn main() {
         std::env::set_var("GDK_BACKEND", "wayland,x11");
     }
 
-    let builder = tauri::Builder::default();
+    // Files passed on the command line (Explorer "Open with", double-click on
+    // an associated image, `lap photo.jpg`). Drained by the frontend once ready.
+    let launch_files = t_cmds::collect_file_args(std::env::args().skip(1), None);
+
+    let builder = tauri::Builder::default()
+        // Must be the first plugin: a second launch (e.g. double-clicking
+        // another image while the app runs) forwards its argv here and exits.
+        .plugin(tauri_plugin_single_instance::init(|app, argv, cwd| {
+            let files = t_cmds::collect_file_args(
+                argv.into_iter().skip(1),
+                Some(std::path::Path::new(&cwd)),
+            );
+            focus_main_window(app);
+            if !files.is_empty() {
+                let _ = app.emit("open-external-files", serde_json::json!({ "paths": files }));
+            }
+        }));
     let builder = t_protocol::register_protocols(builder);
 
     let aptabase_enabled = option_env!("APTABASE_KEY")
@@ -105,6 +130,7 @@ async fn main() {
             }),
         )))
         .manage(t_dedup::DedupState::default())
+        .manage(t_cmds::LaunchFiles(std::sync::Mutex::new(launch_files)))
         .manage(t_similar::SimilarState::default())
         .setup(|_app| {
             t_video::init_ffmpeg_path(&_app.handle());
@@ -281,6 +307,9 @@ async fn main() {
             t_cmds::get_external_app_display_name,
             t_cmds::open_file_with_app,
             t_cmds::open_files_with_app,
+            // files opened from the OS
+            t_cmds::take_launch_files,
+            t_cmds::resolve_external_file,
             // file query
             t_cmds::get_query_count_and_sum,
             t_cmds::get_query_time_line,
@@ -453,6 +482,21 @@ async fn main() {
                     if aptabase_enabled {
                         let _ = app_handle.track_event("app_exited", None);
                         app_handle.flush_events_blocking();
+                    }
+                }
+
+                // macOS: files opened via Finder / "Open with" arrive as URLs.
+                #[cfg(target_os = "macos")]
+                tauri::RunEvent::Opened { urls } => {
+                    let files: Vec<String> = urls
+                        .iter()
+                        .filter_map(|url| url.to_file_path().ok())
+                        .filter(|path| path.is_file())
+                        .map(|path| path.to_string_lossy().to_string())
+                        .collect();
+                    focus_main_window(app_handle);
+                    if !files.is_empty() {
+                        let _ = app_handle.emit("open-external-files", serde_json::json!({ "paths": files }));
                     }
                 }
 

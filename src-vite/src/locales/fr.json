@@ -794,6 +794,13 @@
       "ok": "Créer",
       "success": "Dossier « {name} » créé."
     },
+    "open_external": {
+      "title": "Ouvrir l'image",
+      "message": "« {name} » n'est pas dans la bibliothèque.\nAjouter son dossier « {folder} » comme album et l'ouvrir ?",
+      "ok": "Ajouter et ouvrir",
+      "unsupported": "Format de fichier non pris en charge.",
+      "error": "Impossible d'ouvrir le fichier."
+    },
     "move_to": {
       "title": "Déplacer '{source}' vers",
       "content": "Choisir destination:",

@@ -2123,3 +2123,26 @@ export async function getPersonThumbnail(personId) {
   }
   return null;
 }
+
+// files opened from the OS (Explorer "Open with", double-click, command line)
+
+/// Paths passed on the command line at launch. Emptied after the first call.
+export async function takeLaunchFiles() {
+  try {
+    const files = await invoke('take_launch_files');
+    return Array.isArray(files) ? files : [];
+  } catch (error) {
+    console.error('takeLaunchFiles error:', error);
+    return [];
+  }
+}
+
+/// Map an external file onto the library: { file_path, folder_path, supported, album, file }.
+export async function resolveExternalFile(filePath) {
+  try {
+    return await invoke('resolve_external_file', { filePath });
+  } catch (error) {
+    console.error('resolveExternalFile error:', error);
+    return null;
+  }
+}

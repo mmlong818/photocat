@@ -794,6 +794,13 @@
       "ok": "Create",
       "success": "Folder \"{name}\" created."
     },
+    "open_external": {
+      "title": "Open image",
+      "message": "\"{name}\" is not in the library.\nAdd its folder \"{folder}\" as an album and open it?",
+      "ok": "Add and open",
+      "unsupported": "Unsupported file format.",
+      "error": "Could not open the file."
+    },
     "move_to": {
       "title": "Move '{source}' to",
       "content": "Select the destination folder:",
