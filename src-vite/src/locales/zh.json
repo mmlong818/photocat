@@ -309,6 +309,22 @@
     "load_failed": "无法加载标签状态，请关闭对话框后重试。"
   },
   "subject": {
+    "custom": {
+      "add_title": "新建主题",
+      "edit_title": "编辑主题",
+      "remove": "删除主题",
+      "name": "名称",
+      "name_placeholder": "例如：海边",
+      "prompt": "描述",
+      "prompt_placeholder": "a photo of a sandy beach with ocean waves",
+      "prompt_hint": "用一句话描述照片的样子。默认模型只认英文，在设置里换成多语言模型后可以用中文。",
+      "precision": "精确度",
+      "precision_strict": "严格",
+      "precision_standard": "标准",
+      "precision_loose": "宽松",
+      "precision_hint": "越严格结果越少越准。先用标准，觉得漏了再调宽松。",
+      "limit_reached": "最多只能创建 {count} 个自定义主题。"
+    },
     "title": "主题",
     "items": {
       "family": "家庭",

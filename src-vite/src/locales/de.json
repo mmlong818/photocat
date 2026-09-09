@@ -309,6 +309,22 @@
     "load_failed": "Tag-Status konnte nicht geladen werden. Schließen Sie diesen Dialog und versuchen Sie es erneut."
   },
   "subject": {
+    "custom": {
+      "add_title": "Neues Thema",
+      "edit_title": "Thema bearbeiten",
+      "remove": "Thema löschen",
+      "name": "Name",
+      "name_placeholder": "z. B. Strand",
+      "prompt": "Beschreibung",
+      "prompt_placeholder": "a photo of a sandy beach with ocean waves",
+      "prompt_hint": "Beschreiben Sie das Foto in einem Satz. Das Standardmodell liest Englisch; wechseln Sie in den Einstellungen zum mehrsprachigen Modell.",
+      "precision": "Genauigkeit",
+      "precision_strict": "Streng",
+      "precision_standard": "Standard",
+      "precision_loose": "Locker",
+      "precision_hint": "Strenger bedeutet weniger, aber bessere Treffer. Beginnen Sie mit Standard.",
+      "limit_reached": "Sie können höchstens {count} eigene Themen anlegen."
+    },
     "title": "Motive",
     "items": {
       "family": "Familie",

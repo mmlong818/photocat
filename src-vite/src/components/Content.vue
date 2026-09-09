@@ -774,7 +774,7 @@ import {
   thumbnailProfile,
 } from '@/common/thumbnailProfiles';
 import { getShortcutLabel, matchesShortcut, ShortcutActionId, ShortcutPlatform, VIEW_BACKGROUND_SHORTCUTS } from '@/common/shortcuts';
-import { getSmartTagById } from '@/common/smartTags';
+import { findCustomSubject, resolveSubject } from '@/common/customSubjects';
 import { clearFolderFileCounts, setFolderFileCount } from '@/composables/useAlbumSelection';
 import { createEmptyLibraryCounts } from '@/stores/libraryStore';
 import { getAlbumScanState, getAlbumScanIcon, shouldAnimateAlbumScanIcon } from '@/common/scanStatus';
@@ -7527,13 +7527,15 @@ async function updateContent(force = false, preserveMultiSelection = selectMode.
           showEmptyContent(requestId);
           break;
         }
-        const smartTag = getSmartTagById(smartId);
+        const smartTag = resolveSubject(smartId);
         if (!smartTag) {
           contentTitle.value = localeMsg.value.subject.title;
           showEmptyContent(requestId);
           break;
         }
-        const smartTagLabel = localeMsg.value.subject.items?.[smartTag.id] || smartTag.id;
+        const smartTagLabel = findCustomSubject(smartTag.id)?.name
+          || localeMsg.value.subject.items?.[smartTag.id]
+          || smartTag.id;
         contentTitle.value = `${localeMsg.value.subject.title} > ${smartTagLabel}`;
         getImageSearchFileList(
           smartTag.prompt,

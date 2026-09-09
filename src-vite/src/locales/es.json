@@ -309,6 +309,22 @@
     "load_failed": "No se pudo cargar el estado de las etiquetas. Cierra este diálogo e inténtalo de nuevo."
   },
   "subject": {
+    "custom": {
+      "add_title": "Nuevo tema",
+      "edit_title": "Editar tema",
+      "remove": "Eliminar tema",
+      "name": "Nombre",
+      "name_placeholder": "p. ej. Playa",
+      "prompt": "Descripción",
+      "prompt_placeholder": "a photo of a sandy beach with ocean waves",
+      "prompt_hint": "Describe la foto en una frase. El modelo predeterminado lee inglés; cambia al modelo multilingüe en Ajustes.",
+      "precision": "Precisión",
+      "precision_strict": "Estricta",
+      "precision_standard": "Estándar",
+      "precision_loose": "Amplia",
+      "precision_hint": "Más estricta da menos resultados pero mejores. Empieza por Estándar.",
+      "limit_reached": "Puedes crear como máximo {count} temas personalizados."
+    },
     "title": "Temas",
     "items": {
       "family": "Familia",

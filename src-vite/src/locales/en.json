@@ -309,6 +309,22 @@
     "load_failed": "Failed to load tag states. Close this dialog and try again."
   },
   "subject": {
+    "custom": {
+      "add_title": "New subject",
+      "edit_title": "Edit subject",
+      "remove": "Delete subject",
+      "name": "Name",
+      "name_placeholder": "e.g. Beach",
+      "prompt": "Description",
+      "prompt_placeholder": "a photo of a sandy beach with ocean waves",
+      "prompt_hint": "Describe what the photo looks like in one sentence. The default model reads English; switch to the multilingual model in Settings to write in your own language.",
+      "precision": "Precision",
+      "precision_strict": "Strict",
+      "precision_standard": "Standard",
+      "precision_loose": "Loose",
+      "precision_hint": "Stricter means fewer but better matches. Start with Standard and loosen it if photos are missing.",
+      "limit_reached": "You can create at most {count} custom subjects."
+    },
     "title": "Subjects",
     "items": {
       "family": "Family",

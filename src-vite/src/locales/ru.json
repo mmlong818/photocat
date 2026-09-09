@@ -309,6 +309,22 @@
     "load_failed": "Не удалось загрузить состояние тегов. Закройте это окно и повторите попытку."
   },
   "subject": {
+    "custom": {
+      "add_title": "Новая тема",
+      "edit_title": "Изменить тему",
+      "remove": "Удалить тему",
+      "name": "Название",
+      "name_placeholder": "например: Пляж",
+      "prompt": "Описание",
+      "prompt_placeholder": "a photo of a sandy beach with ocean waves",
+      "prompt_hint": "Опишите фотографию одной фразой. Стандартная модель читает по-английски; в настройках можно выбрать многоязычную.",
+      "precision": "Точность",
+      "precision_strict": "Строго",
+      "precision_standard": "Стандарт",
+      "precision_loose": "Свободно",
+      "precision_hint": "Чем строже, тем меньше результатов, но они точнее. Начните со стандарта.",
+      "limit_reached": "Можно создать не более {count} собственных тем."
+    },
     "title": "Сюжеты",
     "items": {
       "family": "Семья",

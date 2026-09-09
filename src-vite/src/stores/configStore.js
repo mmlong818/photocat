@@ -121,6 +121,7 @@ export const useConfigStore = defineStore('configStore', {
       showToolTip: true,          // show button tooltip
       showStatusBar: true,        // show status bar
       autoCheckUpdates: true,      // automatically check for updates
+      customSubjects: [],         // user-defined subjects: { id, name, prompt, precision }
       debugMode: false,           // debug mode
 
       // navigation settings

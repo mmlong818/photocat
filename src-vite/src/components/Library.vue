@@ -131,7 +131,7 @@
         </div>
       </Transition>
 
-      <div class="sidebar-item sidebar-item-hover" @click="toggleSubjects">
+      <div class="group sidebar-item sidebar-item-hover" @click="toggleSubjects">
         <IconRight
           :class="[
             'p-1 w-6 h-6 shrink-0 transition-transform',
@@ -142,6 +142,13 @@
         <span class="sidebar-item-label">
           {{ localeMsg.subject.title }}
         </span>
+        <button
+          class="mr-1 p-1 rounded-box shrink-0 invisible group-hover:visible hover:bg-base-content/10 hover:text-base-content"
+          :title="$t('subject.custom.add_title')"
+          @click.stop="openAddSubject"
+        >
+          <IconAdd class="w-4 h-4" />
+        </button>
       </div>
 
       <Transition
@@ -155,14 +162,23 @@
             <li v-for="item in smartTagItems" :key="item.id" class="pl-4">
               <div
                 :class="[
-                  'sidebar-item sidebar-item-compact ml-2',
+                  'group sidebar-item sidebar-item-compact ml-2',
                   libConfig.library.item === LIB_ITEM.SUBJECTS && libConfig.library.smartId === item.id ? 'sidebar-item-selected' : 'sidebar-item-hover',
                 ]"
                 @click="selectSmartTag(item.id)"
+                @contextmenu.prevent.stop="(e) => item.custom && openSubjectMenu(item.id, e)"
               >
                 <IconBolt class="mx-1 w-4 h-4 shrink-0" />
                 <span class="sidebar-item-label">{{ item.label }}</span>
                 <span v-if="item.count" class="text-[10px] tabular-nums text-base-content/30 mr-2">{{ formatSearchResultCount(item.count) }}</span>
+                <div v-if="item.custom" class="mr-1 shrink-0 invisible group-hover:visible" @click.stop>
+                  <ContextMenu
+                    :ref="(el) => { if (el) subjectMenus[item.id] = el }"
+                    :iconMenu="IconMore"
+                    :menuItems="() => subjectMenuItems(item.id)"
+                    :smallIcon="true"
+                  />
+                </div>
               </div>
             </li>
           </ul>
@@ -172,18 +188,38 @@
 
   </div>
 
+  <SubjectEditDialog
+    v-if="showSubjectDialog"
+    :subject="editingSubject"
+    @save="saveSubject"
+    @cancel="closeSubjectDialog"
+  />
+
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, watch } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { config, libConfig } from '@/common/config';
 import { useUIStore } from '@/stores/uiStore';
 import { createEmptyLibraryCounts } from '@/stores/libraryStore';
 import { CULLING, LIB_ITEM, RATE, SIDEBAR, type LibItem } from '@/common/constants';
 
-import { IconFiles, IconHeartFilled, IconRight, IconBolt, IconFlag, IconFlagFilled, IconFlagOff, IconStar, IconStarFilled, IconHistory } from '@/common/icons';
+import { IconFiles, IconHeartFilled, IconRight, IconBolt, IconFlag, IconFlagFilled, IconFlagOff, IconStar, IconStarFilled, IconHistory, IconAdd, IconMore, IconEdit, IconTrash } from '@/common/icons';
 import { SMART_TAG_CATEGORIES } from '@/common/smartTags';
+import { useToast } from '@/common/toast';
+import ContextMenu from '@/components/ContextMenu.vue';
+import SubjectEditDialog from '@/components/SubjectEditDialog.vue';
+import {
+  addCustomSubject,
+  findCustomSubject,
+  listCustomSubjects,
+  removeCustomSubject,
+  updateCustomSubject,
+  MAX_CUSTOM_SUBJECTS,
+  type CustomSubject,
+  type SubjectPrecision,
+} from '@/common/customSubjects';
 import { getLibraryVisibleCounts } from '@/common/api';
 
 const props = defineProps({
@@ -193,9 +229,10 @@ const props = defineProps({
   }
 });
 
-const { locale, messages } = useI18n();
+const { locale, messages, t } = useI18n();
 const localeMsg = computed(() => messages.value[locale.value] as any);
 const uiStore = useUIStore();
+const toast = useToast();
 const libraryCounts = computed(() => libConfig.library.counts || createEmptyLibraryCounts());
 const subjectCounts = computed(() => libConfig.library.subjectCounts || {});
 const totalCount = computed(() => Number(libraryCounts.value.all || 0));
@@ -253,16 +290,85 @@ const libraryItems = computed(() => [
   },
 ]);
 
-const smartTagItems = computed(() =>
-  SMART_TAG_CATEGORIES.map(category => {
+const smartTagItems = computed(() => {
+  const builtIn = SMART_TAG_CATEGORIES.map(category => {
     const item = category.items[0];
     return {
       id: item.id,
       label: localeMsg.value.subject.items?.[item.id] || item.id,
       count: Number(subjectCounts.value[item.id] || 0),
+      custom: false,
     };
-  })
-);
+  });
+  const custom = listCustomSubjects().map(subject => ({
+    id: subject.id,
+    label: subject.name,
+    count: Number(subjectCounts.value[subject.id] || 0),
+    custom: true,
+  }));
+  return [...builtIn, ...custom];
+});
+
+// —— Subjects the user wrote themselves ——
+const showSubjectDialog = ref(false);
+const editingSubject = ref<CustomSubject | null>(null);
+const subjectMenus = ref<Record<string, any>>({});
+
+function openAddSubject() {
+  if (listCustomSubjects().length >= MAX_CUSTOM_SUBJECTS) {
+    toast.error(t('subject.custom.limit_reached', { count: MAX_CUSTOM_SUBJECTS }));
+    return;
+  }
+  libConfig.library.subjectsExpanded = true;
+  editingSubject.value = null;
+  showSubjectDialog.value = true;
+}
+
+function closeSubjectDialog() {
+  showSubjectDialog.value = false;
+  editingSubject.value = null;
+}
+
+function saveSubject(value: { name: string; prompt: string; precision: SubjectPrecision }) {
+  const existing = editingSubject.value;
+  if (existing) {
+    updateCustomSubject(existing.id, value.name, value.prompt, value.precision);
+    // Re-run the query so the grid reflects the edited description right away.
+    if (libConfig.library.smartId === existing.id) selectSmartTag(existing.id);
+  } else {
+    const created = addCustomSubject(value.name, value.prompt, value.precision);
+    if (created) selectSmartTag(created.id);
+  }
+  closeSubjectDialog();
+}
+
+function openSubjectMenu(id: string, event: MouseEvent) {
+  subjectMenus.value[id]?.open?.(event.clientX, event.clientY);
+}
+
+function subjectMenuItems(id: string) {
+  return [
+    {
+      label: localeMsg.value.subject.custom.edit_title,
+      icon: IconEdit,
+      action: () => {
+        editingSubject.value = findCustomSubject(id);
+        if (editingSubject.value) showSubjectDialog.value = true;
+      },
+    },
+    {
+      label: localeMsg.value.subject.custom.remove,
+      icon: IconTrash,
+      action: () => {
+        removeCustomSubject(id);
+        if (libConfig.library.smartId === id) {
+          libConfig.library.smartId = null;
+          libConfig.library.activateTick = Number(libConfig.library.activateTick || 0) + 1;
+        }
+      },
+    },
+  ];
+}
 
 const cullingItems = computed(() => [
   { id: CULLING.PICK, label: localeMsg.value.culling.picks, icon: IconFlagFilled, count: cullingCounts.value[CULLING.PICK] },

@@ -309,6 +309,22 @@
     "load_failed": "Impossible de charger l’état des tags. Fermez cette boîte de dialogue et réessayez."
   },
   "subject": {
+    "custom": {
+      "add_title": "Nouveau sujet",
+      "edit_title": "Modifier le sujet",
+      "remove": "Supprimer le sujet",
+      "name": "Nom",
+      "name_placeholder": "ex. Plage",
+      "prompt": "Description",
+      "prompt_placeholder": "a photo of a sandy beach with ocean waves",
+      "prompt_hint": "Décrivez la photo en une phrase. Le modèle par défaut lit l'anglais ; passez au modèle multilingue dans les Réglages.",
+      "precision": "Précision",
+      "precision_strict": "Stricte",
+      "precision_standard": "Standard",
+      "precision_loose": "Large",
+      "precision_hint": "Plus strict donne moins de résultats mais de meilleurs. Commencez par Standard.",
+      "limit_reached": "Vous pouvez créer au maximum {count} sujets personnalisés."
+    },
     "title": "Sujets",
     "items": {
       "family": "Famille",

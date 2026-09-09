@@ -309,6 +309,22 @@
     "load_failed": "Não foi possível carregar o estado das tags. Feche esta caixa de diálogo e tente novamente."
   },
   "subject": {
+    "custom": {
+      "add_title": "Novo tema",
+      "edit_title": "Editar tema",
+      "remove": "Excluir tema",
+      "name": "Nome",
+      "name_placeholder": "ex. Praia",
+      "prompt": "Descrição",
+      "prompt_placeholder": "a photo of a sandy beach with ocean waves",
+      "prompt_hint": "Descreva a foto em uma frase. O modelo padrão lê inglês; troque para o modelo multilíngue nas Configurações.",
+      "precision": "Precisão",
+      "precision_strict": "Rigorosa",
+      "precision_standard": "Padrão",
+      "precision_loose": "Ampla",
+      "precision_hint": "Mais rigorosa dá menos resultados, porém melhores. Comece com Padrão.",
+      "limit_reached": "Você pode criar no máximo {count} temas personalizados."
+    },
     "title": "Temas",
     "items": {
       "family": "Família",

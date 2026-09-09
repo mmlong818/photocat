@@ -309,6 +309,22 @@
     "load_failed": "タグの状態を読み込めませんでした。ダイアログを閉じて再試行してください。"
   },
   "subject": {
+    "custom": {
+      "add_title": "テーマを追加",
+      "edit_title": "テーマを編集",
+      "remove": "テーマを削除",
+      "name": "名前",
+      "name_placeholder": "例：海辺",
+      "prompt": "説明",
+      "prompt_placeholder": "a photo of a sandy beach with ocean waves",
+      "prompt_hint": "写真の見た目を一文で書きます。既定のモデルは英語のみです。設定で多言語モデルに切り替えると日本語も使えます。",
+      "precision": "精度",
+      "precision_strict": "厳しい",
+      "precision_standard": "標準",
+      "precision_loose": "ゆるい",
+      "precision_hint": "厳しいほど件数は減り精度は上がります。まず標準でお試しください。",
+      "limit_reached": "カスタムテーマは最大 {count} 個までです。"
+    },
     "title": "被写体",
     "items": {
       "family": "家族",
