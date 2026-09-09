@@ -16,6 +16,7 @@ use tauri_plugin_aptabase::EventTracker;
 mod t_ai;
 mod t_ai_png;
 mod t_apple_sidecar;
+mod t_browse;
 mod t_cluster;
 mod t_cmds;
 mod t_common;
@@ -94,6 +95,7 @@ async fn main() {
             }
         }));
     let builder = t_protocol::register_protocols(builder);
+    let builder = t_browse::register_protocol(builder);
 
     let aptabase_enabled = option_env!("APTABASE_KEY")
         .filter(|k| !k.is_empty())
@@ -250,6 +252,8 @@ async fn main() {
                     }
                 }
             });
+
+            t_browse::prune_cache_in_background();
 
             t_utils::start_folder_mtime_sync(_app.handle().clone());
 
@@ -485,6 +489,8 @@ async fn main() {
             t_cmds::check_ai_status,
             t_cmds::get_model_status,
             t_cmds::is_portable_build,
+            t_cmds::browse_folder,
+            t_cmds::browse_parent_of,
             t_cmds::get_image_search_model_status,
             t_cmds::set_image_search_model,
             t_cmds::download_multilingual_image_search_model,

@@ -1732,6 +1732,23 @@
       }
     }
   },
+  "browse":   {
+    "title": "参照",
+    "up": "上へ",
+    "back": "戻る",
+    "sort_name": "名前",
+    "sort_date": "日付",
+    "sort_size": "サイズ",
+    "sort_type": "種類",
+    "ascending": "昇順",
+    "descending": "降順",
+    "file_count": "{count} 件",
+    "add_to_library": "ライブラリに追加",
+    "added": "「{folder}」をライブラリに追加しました。",
+    "add_failed": "ライブラリに追加できませんでした。",
+    "empty": "表示できるものがありません。",
+    "cannot_open": "{folder} を読み取れません。"
+  },
   "startup": {
     "loading_models": "画像テキスト検索モデルを読み込み中…",
     "loading_library": "ライブラリを読み込み中…",

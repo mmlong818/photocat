@@ -2,7 +2,7 @@ use tauri::{Builder, Wry};
 
 use crate::{t_image, t_sqlite};
 
-fn text_response(status: http::StatusCode, body: &str) -> http::Response<Vec<u8>> {
+pub(crate) fn text_response(status: http::StatusCode, body: &str) -> http::Response<Vec<u8>> {
     http::Response::builder()
         .status(status)
         .header(http::header::CONTENT_TYPE, "text/plain")
@@ -73,7 +73,7 @@ fn detect_isobmff_mime(data: &[u8]) -> &'static str {
     }
 }
 
-fn image_response(data: Vec<u8>) -> http::Response<Vec<u8>> {
+pub(crate) fn image_response(data: Vec<u8>) -> http::Response<Vec<u8>> {
     http::Response::builder()
         .status(http::StatusCode::OK)
         .header(http::header::CONTENT_TYPE, detect_image_mime(&data))

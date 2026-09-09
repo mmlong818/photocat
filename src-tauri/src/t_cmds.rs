@@ -3351,6 +3351,30 @@ pub fn get_storage_file_info() -> Result<t_utils::FileInfo, String> {
 
 // image search
 
+/// List one folder for the browse window, reading the disk directly.
+///
+/// The directory is added to the asset scope first, because the webview loads
+/// browser-native images straight from the file system and would otherwise be
+/// refused. Nothing is written to the library.
+#[tauri::command]
+pub fn browse_folder(
+    app_handle: AppHandle,
+    path: String,
+    sort: i64,
+    descending: bool,
+) -> Result<crate::t_browse::BrowseListing, String> {
+    t_utils::authorize_directory_scope(&app_handle, &path)?;
+    crate::t_browse::list_folder(&path, crate::t_browse::SortBy::from_i64(sort), descending)
+}
+
+/// The folder holding a given file, so opening a file can open its folder.
+#[tauri::command]
+pub fn browse_parent_of(path: String) -> Option<String> {
+    std::path::Path::new(&path)
+        .parent()
+        .map(|p| p.to_string_lossy().to_string())
+}
+
 /// Whether this copy runs from a portable folder rather than an installation.
 /// The updater uses it to offer a download instead of running an installer
 /// that would leave the portable folder behind.

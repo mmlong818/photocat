@@ -1732,6 +1732,23 @@
       }
     }
   },
+  "browse":   {
+    "title": "Durchsuchen",
+    "up": "Nach oben",
+    "back": "Zurück",
+    "sort_name": "Name",
+    "sort_date": "Datum",
+    "sort_size": "Größe",
+    "sort_type": "Typ",
+    "ascending": "Aufsteigend",
+    "descending": "Absteigend",
+    "file_count": "{count} Dateien",
+    "add_to_library": "Zur Mediathek hinzufügen",
+    "added": "„{folder}“ wurde zur Mediathek hinzugefügt.",
+    "add_failed": "Ordner konnte nicht hinzugefügt werden.",
+    "empty": "Hier gibt es nichts anzuzeigen.",
+    "cannot_open": "{folder} konnte nicht gelesen werden."
+  },
   "startup": {
     "loading_models": "Bild-Text-Suchmodell wird geladen…",
     "loading_library": "Mediathek wird geladen…",

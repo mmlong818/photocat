@@ -1732,6 +1732,23 @@
       }
     }
   },
+  "browse":   {
+    "title": "Explorar",
+    "up": "Acima",
+    "back": "Voltar",
+    "sort_name": "Nome",
+    "sort_date": "Data",
+    "sort_size": "Tamanho",
+    "sort_type": "Tipo",
+    "ascending": "Crescente",
+    "descending": "Decrescente",
+    "file_count": "{count} arquivos",
+    "add_to_library": "Adicionar à biblioteca",
+    "added": "“{folder}” foi adicionado à biblioteca.",
+    "add_failed": "Não foi possível adicionar esta pasta.",
+    "empty": "Nada para mostrar aqui.",
+    "cannot_open": "Não foi possível ler {folder}."
+  },
   "startup": {
     "loading_models": "Carregando o modelo de busca imagem-texto…",
     "loading_library": "Carregando sua biblioteca…",

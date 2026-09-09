@@ -1732,6 +1732,23 @@
       }
     }
   },
+  "browse":   {
+    "title": "Обзор",
+    "up": "Вверх",
+    "back": "Назад",
+    "sort_name": "Имя",
+    "sort_date": "Дата",
+    "sort_size": "Размер",
+    "sort_type": "Тип",
+    "ascending": "По возрастанию",
+    "descending": "По убыванию",
+    "file_count": "Файлов: {count}",
+    "add_to_library": "Добавить в библиотеку",
+    "added": "«{folder}» добавлена в библиотеку.",
+    "add_failed": "Не удалось добавить папку.",
+    "empty": "Здесь нечего показать.",
+    "cannot_open": "Не удалось прочитать {folder}."
+  },
   "startup": {
     "loading_models": "Загрузка модели поиска по изображениям…",
     "loading_library": "Загрузка библиотеки…",

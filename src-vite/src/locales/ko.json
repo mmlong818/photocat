@@ -1732,6 +1732,23 @@
       }
     }
   },
+  "browse":   {
+    "title": "찾아보기",
+    "up": "위로",
+    "back": "뒤로",
+    "sort_name": "이름",
+    "sort_date": "날짜",
+    "sort_size": "크기",
+    "sort_type": "종류",
+    "ascending": "오름차순",
+    "descending": "내림차순",
+    "file_count": "{count}개 파일",
+    "add_to_library": "라이브러리에 추가",
+    "added": "\"{folder}\"을(를) 라이브러리에 추가했습니다.",
+    "add_failed": "라이브러리에 추가하지 못했습니다.",
+    "empty": "표시할 것이 없습니다.",
+    "cannot_open": "{folder}을(를) 읽을 수 없습니다."
+  },
   "startup": {
     "loading_models": "이미지-텍스트 검색 모델 불러오는 중…",
     "loading_library": "라이브러리 불러오는 중…",

@@ -555,17 +555,6 @@
     @reset="newFolderError = ''"
   />
 
-  <!-- file opened from the OS that is not in the library yet -->
-  <MessageBox
-    v-if="showOpenExternalMsgbox && pendingExternalFile"
-    :title="$t('msgbox.open_external.title')"
-    :message="$t('msgbox.open_external.message', { name: getFileName(pendingExternalFile.filePath), folder: getFolderName(pendingExternalFile.folderPath) })"
-    :OkText="$t('msgbox.open_external.ok')"
-    :cancelText="$t('msgbox.cancel')"
-    :isLoading="isOpeningExternalFile"
-    @ok="onOpenExternalOk"
-    @cancel="closeOpenExternalMsgbox"
-  />
 
   <!-- move to -->
   <MoveTo
@@ -781,6 +770,7 @@ import { ask, open as openDialog } from '@tauri-apps/plugin-dialog';
 import { WebviewWindow } from '@tauri-apps/api/webviewWindow';
 import { useI18n } from 'vue-i18n';
 import { useToast } from '@/common/toast';
+import { openBrowseWindow } from '@/common/browse';
 import { useUIStore } from '@/stores/uiStore';
 import { getAlbum, getAllAlbums, recountAlbum, getQueryCountAndSum, getQueryTimeLine, getQueryFiles, getFilesByIds, getGroupedQueryRows, getGroupedFilePosition, getGroupFileIds, getQueryFileIds, syncAlbumFolderMtimes,
          getSmartQueryCountAndSum, getSmartQueryTimeLine, getSmartQueryFiles, getSmartGroupedQueryRows, getSmartGroupFileIds, getSmartQueryFileIds, getSmartQueryFilePosition,
@@ -1215,19 +1205,6 @@ async function onNewFolderOk(nameArg: string) {
 
 // —— Files handed to us by the OS (Explorer "Open with" / double-click / argv) ——
 let unlistenOpenExternalFiles: (() => void) | null = null;
-const showOpenExternalMsgbox = ref(false);
-const pendingExternalFile = ref<{ filePath: string; folderPath: string } | null>(null);
-const isOpeningExternalFile = ref(false);
-
-function getFileName(path: string) {
-  return String(path || '').split(/[\\/]/).pop() || path;
-}
-
-function closeOpenExternalMsgbox() {
-  if (isOpeningExternalFile.value) return;
-  showOpenExternalMsgbox.value = false;
-  pendingExternalFile.value = null;
-}
 
 // Entry point for both the launch argv and the single-instance forward.
 async function openExternalFiles(paths: string[]) {
@@ -1247,41 +1224,10 @@ async function openExternalFiles(paths: string[]) {
     await showExternalFileInViewer(result.file);
     return;
   }
-  // Not inside any album: offer to add its folder as a new album.
-  pendingExternalFile.value = { filePath: result.file_path, folderPath: result.folder_path };
-  showOpenExternalMsgbox.value = true;
-}
-
-async function onOpenExternalOk() {
-  const pending = pendingExternalFile.value;
-  if (!pending || isOpeningExternalFile.value) return;
-  isOpeningExternalFile.value = true;
-  try {
-    const album = await addAlbum(pending.folderPath);
-    if (!album) {
-      toast.error(t('msgbox.open_external.error'));
-      return;
-    }
-    await tauriEmit('albums-refreshed');
-    await tauriEmit('library-total-refreshed');
-
-    // Register just this file so the viewer can open it right away, then let
-    // the normal indexing queue pick up the rest of the folder.
-    const result = await resolveExternalFile(pending.filePath);
-    if (result?.file) {
-      await showExternalFileInViewer(result.file);
-    } else {
-      toast.error(t('msgbox.open_external.error'));
-    }
-    libConfig.index.status = 1;
-    if (!libConfig.index.albumQueue.includes(album.id)) {
-      libConfig.index.albumQueue.push(album.id);
-    }
-  } finally {
-    isOpeningExternalFile.value = false;
-    showOpenExternalMsgbox.value = false;
-    pendingExternalFile.value = null;
-  }
+  // Not inside any album. Reading one photo should not turn its folder into
+  // part of the library, so open the folder in the browse window instead and
+  // land on this file. Adding it is offered there, as a deliberate act.
+  await openBrowseWindow(result.folder_path, result.file_path);
 }
 
 // Wait until the grid is showing `folderPath` and has stopped loading. Startup

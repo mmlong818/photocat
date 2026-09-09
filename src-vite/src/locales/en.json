@@ -1732,6 +1732,23 @@
       }
     }
   },
+  "browse":   {
+    "title": "Browse",
+    "up": "Up",
+    "back": "Back",
+    "sort_name": "Name",
+    "sort_date": "Date",
+    "sort_size": "Size",
+    "sort_type": "Type",
+    "ascending": "Ascending",
+    "descending": "Descending",
+    "file_count": "{count} files",
+    "add_to_library": "Add to library",
+    "added": "Added \"{folder}\" to the library.",
+    "add_failed": "Could not add this folder to the library.",
+    "empty": "Nothing here that can be shown.",
+    "cannot_open": "Could not read {folder}."
+  },
   "startup": {
     "loading_models": "Loading the image-text search model…",
     "loading_library": "Loading your library…",
