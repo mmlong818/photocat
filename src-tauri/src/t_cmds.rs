@@ -49,6 +49,13 @@ impl Default for ImportState {
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+struct RenameFinished {
+    result: Option<crate::t_rename::RenameResult>,
+    error: Option<String>,
+}
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
 struct SidecarFinished {
     result: Option<crate::t_xmp::SidecarResult>,
     error: Option<String>,
@@ -1424,6 +1431,108 @@ pub fn export_files(
         let _ = app_handle.emit("export-finished", payload);
     });
 
+    Ok(())
+}
+
+/// Turn the files into the rename sources the template engine works from.
+fn rename_sources(file_ids: &[i64]) -> Result<Vec<crate::t_rename::RenameSource>, String> {
+    let files = AFile::get_files_by_ids(file_ids)?;
+    let mut by_id = std::collections::HashMap::new();
+    for file in files {
+        if let (Some(id), Some(path)) = (file.id, file.file_path.clone()) {
+            by_id.insert(
+                id,
+                crate::t_rename::RenameSource {
+                    file_id: id,
+                    file_path: path,
+                    name: file.name.clone(),
+                    taken_date: file.taken_date,
+                    make: file.e_make.clone(),
+                    model: file.e_model.clone(),
+                    lens: file.e_lens_model.clone(),
+                },
+            );
+        }
+    }
+    // Preserve the order the user selected, which is what the sequence follows.
+    Ok(file_ids.iter().filter_map(|id| by_id.remove(id)).collect())
+}
+
+/// What the selection would be called, without changing anything.
+#[tauri::command]
+pub fn preview_batch_rename(
+    file_ids: Vec<i64>,
+    template: String,
+    start_index: usize,
+) -> Result<Vec<crate::t_rename::RenamePreview>, String> {
+    let sources = rename_sources(&file_ids)?;
+    Ok(crate::t_rename::plan(&sources, &template, start_index))
+}
+
+/// Carry out the rename. Returns as soon as the work is queued; the caller
+/// follows `rename-progress` and waits for `rename-finished`.
+#[tauri::command]
+pub fn batch_rename(
+    app_handle: AppHandle,
+    state: State<crate::t_rename::RenameCancellation>,
+    file_ids: Vec<i64>,
+    template: String,
+    start_index: usize,
+) -> Result<(), String> {
+    let shared = state.0.clone();
+    crate::t_rename::begin(&shared)?;
+
+    let sources = match rename_sources(&file_ids) {
+        Ok(sources) => sources,
+        Err(e) => {
+            crate::t_rename::finish(&shared);
+            return Err(e);
+        }
+    };
+
+    let progress_handle = app_handle.clone();
+    let cancel_flag = shared.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        let plan = crate::t_rename::plan(&sources, &template, start_index);
+        let result = crate::t_rename::apply(
+            &sources,
+            plan,
+            // The app's own rename keeps Live Photo components, .aae sidecars
+            // and RAW+JPEG pairs together and updates the database.
+            |file_id, file_path, new_name| {
+                rename_file(file_id, file_path, new_name)
+                    .map(|_| ())
+                    .ok_or_else(|| "Rename failed".to_string())
+            },
+            |progress| {
+                let _ = progress_handle.emit("rename-progress", progress);
+            },
+            || {
+                cancel_flag
+                    .cancelled
+                    .load(std::sync::atomic::Ordering::SeqCst)
+            },
+        );
+
+        crate::t_rename::finish(&shared);
+        let _ = app_handle.emit(
+            "rename-finished",
+            RenameFinished { result: Some(result), error: None },
+        );
+    });
+
+    Ok(())
+}
+
+/// Ask a running rename to stop after the file it is on.
+#[tauri::command]
+pub fn cancel_batch_rename(
+    state: State<crate::t_rename::RenameCancellation>,
+) -> Result<(), String> {
+    state
+        .0
+        .cancelled
+        .store(true, std::sync::atomic::Ordering::SeqCst);
     Ok(())
 }
 

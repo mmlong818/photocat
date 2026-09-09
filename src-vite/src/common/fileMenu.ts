@@ -103,6 +103,12 @@ export const useFileMenuItems = (
         action: createAction('recognize-text'),
       },
       {
+        label: String(localeMsg.value.menu.file.batch_rename || 'Batch rename...'),
+        icon: markRaw(IconRename),
+        disabled: selectionCount < 1,
+        action: createAction('batch-rename'),
+      },
+      {
         label: String(localeMsg.value.menu.file.metadata_sidecars || 'Metadata sidecars...'),
         icon: markRaw(IconInformation),
         disabled: selectionCount < 1,

@@ -37,6 +37,7 @@ mod t_motion_photo;
 mod t_ocr;
 mod t_pasteboard;
 mod t_protocol;
+mod t_rename;
 mod t_similar;
 mod t_sqlite;
 mod t_storage;
@@ -142,6 +143,7 @@ async fn main() {
         .manage(t_export::ExportCancellation::default())
         .manage(t_ocr::OcrCancellation::default())
         .manage(t_xmp::SidecarCancellation::default())
+        .manage(t_rename::RenameCancellation::default())
         .setup(|_app| {
             // The identifier decides where app data lives, so it has to be set
             // before any other code resolves a data path.
@@ -392,6 +394,9 @@ async fn main() {
             t_cmds::clear_recognized_text,
             t_cmds::transfer_metadata_sidecars,
             t_cmds::cancel_metadata_sidecars,
+            t_cmds::preview_batch_rename,
+            t_cmds::batch_rename,
+            t_cmds::cancel_batch_rename,
             t_cmds::copy_images,
             t_cmds::rename_file,
             t_cmds::move_file,

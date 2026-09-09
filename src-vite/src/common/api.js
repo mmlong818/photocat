@@ -2241,3 +2241,35 @@ export async function listenSidecarProgress(callback) {
 export async function listenSidecarFinished(callback) {
   return await listen('sidecar-finished', callback);
 }
+
+// batch rename
+
+/// What the selection would be called, without changing anything.
+export async function previewBatchRename(fileIds, template, startIndex) {
+  try {
+    return await invoke('preview_batch_rename', { fileIds, template, startIndex });
+  } catch (error) {
+    console.error('previewBatchRename error:', error);
+    return [];
+  }
+}
+
+export async function batchRename(fileIds, template, startIndex) {
+  return await invoke('batch_rename', { fileIds, template, startIndex });
+}
+
+export async function cancelBatchRename() {
+  try {
+    return await invoke('cancel_batch_rename');
+  } catch (error) {
+    console.error('cancelBatchRename error:', error);
+  }
+}
+
+export async function listenRenameProgress(callback) {
+  return await listen('rename-progress', callback);
+}
+
+export async function listenRenameFinished(callback) {
+  return await listen('rename-finished', callback);
+}

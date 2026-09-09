@@ -645,6 +645,13 @@
     @cancel="sidecarCandidates = []"
   />
 
+  <BatchRenameDialog
+    v-if="renameCandidates.length > 0"
+    :files="renameCandidates"
+    @complete="onBatchRenameComplete"
+    @cancel="renameCandidates = []"
+  />
+
   <ExternalAppsDialog
     v-if="showExternalAppsDialog"
     @cancel="showExternalAppsDialog = false"
@@ -823,6 +830,7 @@ import ExternalAppsDialog from '@/components/ExternalAppsDialog.vue';
 import ExportDialog from '@/components/ExportDialog.vue';
 import OcrDialog from '@/components/OcrDialog.vue';
 import SidecarDialog from '@/components/SidecarDialog.vue';
+import BatchRenameDialog from '@/components/BatchRenameDialog.vue';
 import FileInfo from '@/components/FileInfo.vue';
 import Breadcrumb from '@/components/Breadcrumb.vue';
 import DedupPane from '@/components/DedupPane.vue';
@@ -2167,6 +2175,7 @@ const showExternalAppsDialog = ref(false);
 const exportCandidates = ref<any[]>([]);
 const ocrCandidates = ref<any[]>([]);
 const sidecarCandidates = ref<any[]>([]);
+const renameCandidates = ref<any[]>([]);
 const pendingExternalOpen = ref<{ paths: string[]; appPath: string } | null>(null);
 const permanentDeleteChecked = ref(false);
 const deletePermanently = ref(false);
@@ -4231,6 +4240,7 @@ function handleItemAction(payload: { action: string, index: number }) {
     'export-selected': () => void onExportSelected(),
     'recognize-text': () => void onRecognizeText(),
     'metadata-sidecars': () => void onMetadataSidecars(),
+    'batch-rename': () => void onBatchRename(),
   };
 
   if ((actionMap as any)[action]) {
@@ -8409,6 +8419,18 @@ const resolveConflictPolicy = async (
     return { policy: applyAllPolicy, applyAll: true };
   }
   return requestFileConflict(name, destPath, showApplyAll, !isSamePath);
+}
+
+// Rename the selection from a template, previewing the result first.
+const onBatchRename = async () => {
+  const files = await getFilesForFolderAction();
+  if (!files || files.length === 0) return;
+  renameCandidates.value = files.filter((file: any) => file && file.id && file.file_path);
+}
+
+// Names changed on disk, so the grid has to re-read them.
+const onBatchRenameComplete = (result: any) => {
+  if (Number(result?.renamed) > 0) void updateContent(true);
 }
 
 // Move ratings, tags and notes between the library and .xmp files beside the

@@ -654,6 +654,7 @@
       "refresh_subfolders": "Refresh subfolders"
     },
     "file": {
+      "batch_rename": "Batch rename...",
       "metadata_sidecars": "Metadata sidecars...",
       "recognize_text": "Recognize text...",
       "export_selected": "Export...",
@@ -1156,6 +1157,32 @@
       "use_external_with_app": "Try opening in {app} instead.",
       "unknown": "Unknown error"
     }
+  },
+  "rename": {
+    "title": "Batch rename",
+    "summary": "Renaming {count} files. Extensions are left unchanged.",
+    "template": "Name template",
+    "start_index": "Start at",
+    "tokens": "Available tokens",
+    "token_name": "Original name without its extension",
+    "token_n": "Sequence number; the digit after the colon pads with zeros",
+    "token_date": "Capture date, e.g. 2024-05-17",
+    "token_year": "Capture year",
+    "token_month": "Capture month",
+    "token_day": "Capture day",
+    "token_time": "Capture time, e.g. 142345",
+    "token_camera": "Camera model",
+    "token_lens": "Lens model",
+    "preview": "Preview",
+    "preview_truncated": "Showing the first {shown} of {total}.",
+    "hint": "Duplicate names get (1), (2) appended. Live Photo components, .aae sidecars and RAW+JPEG pairs are renamed together.",
+    "start": "Rename",
+    "stop": "Stop",
+    "working": "Renaming...",
+    "counts": "{processed}/{total} · {renamed} renamed · {skipped} skipped · {failed} failed",
+    "done": "Renamed {renamed} files; {skipped} skipped.",
+    "done_cancelled": "Stopped after {renamed} files.",
+    "done_with_failures": "Renamed {renamed} files, {failed} failed."
   },
   "sidecar": {
     "title": "Metadata sidecars",

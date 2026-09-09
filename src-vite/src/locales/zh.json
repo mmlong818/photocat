@@ -654,6 +654,7 @@
       "refresh_subfolders": "刷新子文件夹"
     },
     "file": {
+      "batch_rename": "批量重命名…",
       "metadata_sidecars": "元数据附属文件…",
       "recognize_text": "识别文字…",
       "export_selected": "导出…",
@@ -1156,6 +1157,32 @@
       "use_external_with_app": "请尝试在 {app} 中打开。",
       "unknown": "未知错误"
     }
+  },
+  "rename": {
+    "title": "批量重命名",
+    "summary": "将重命名 {count} 个文件。扩展名保持不变。",
+    "template": "命名模板",
+    "start_index": "起始序号",
+    "tokens": "可用占位符",
+    "token_name": "原文件名（不含扩展名）",
+    "token_n": "序号，冒号后的数字是补零位数",
+    "token_date": "拍摄日期，如 2024-05-17",
+    "token_year": "拍摄年份",
+    "token_month": "拍摄月份",
+    "token_day": "拍摄日",
+    "token_time": "拍摄时间，如 142345",
+    "token_camera": "相机型号",
+    "token_lens": "镜头型号",
+    "preview": "预览",
+    "preview_truncated": "仅显示前 {shown} 项，共 {total} 项。",
+    "hint": "重名时自动追加 (1)、(2)。实况照片组件、AAE 附属文件与 RAW+JPEG 配对会一并改名。",
+    "start": "开始重命名",
+    "stop": "停止",
+    "working": "重命名中…",
+    "counts": "{processed}/{total} · 已重命名 {renamed} · 跳过 {skipped} · 失败 {failed}",
+    "done": "已重命名 {renamed} 个，跳过 {skipped} 个。",
+    "done_cancelled": "已停止，重命名了 {renamed} 个。",
+    "done_with_failures": "已重命名 {renamed} 个，{failed} 个失败。"
   },
   "sidecar": {
     "title": "元数据附属文件",
