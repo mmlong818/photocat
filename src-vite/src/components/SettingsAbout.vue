@@ -21,16 +21,6 @@
           </div>
           <div class="flex items-center gap-2">
             <span>{{ displayVersion }}</span>
-            <button
-              class="badge badge-sm border-0 px-2 py-2 font-medium transition-colors hover:text-primary"
-              :class="isUpdateActionEnabled ? 'badge-primary cursor-pointer' : 'badge-neutral/60 cursor-pointer'"
-              :disabled="isInstallingUpdate || isCheckingUpdate"
-              :title="updateButtonTooltip"
-              @click="handleUpdateAction"
-            >
-              <span v-if="isInstallingUpdate || isCheckingUpdate" class="loading loading-spinner loading-xs"></span>
-              <span>{{ updateButtonText }}</span>
-            </button>
           </div>
         </div>
 
@@ -47,46 +37,6 @@
           </div>
           <div>{{ packageInfo.license }}</div>
         </div>
-
-        <div class="grid grid-cols-[84px_1fr] items-center gap-1 text-sm">
-          <div class="text-base-content/30">
-            {{ $t('settings.about.package.link') }}
-          </div>
-          <div class="flex flex-wrap items-center justify-start">
-            <!-- <a
-              :href="packageInfo.homepage"
-              target="_blank"
-              class="inline-flex items-center gap-1.5 rounded-box px-2 py-1 text-xs transition-colors hover:bg-base-100/50 hover:text-primary"
-            >
-              <IconLink class="t-icon-size-sm" />
-              <span>{{ $t('settings.about.package.website') }}</span>
-            </a> -->
-            <a
-              :href="packageInfo.repository"
-              target="_blank"
-              class="inline-flex items-center gap-1.5 rounded-box px-2 py-1 text-xs transition-colors hover:bg-base-100/50 hover:text-primary"
-            >
-              <IconGithub class="t-icon-size-sm" />
-              <span>{{ $t('settings.about.package.github') }}</span>
-            </a>
-            <a
-              :href="issuesUrl"
-              target="_blank"
-              class="inline-flex items-center gap-1.5 rounded-box px-2 py-1 text-xs transition-colors hover:bg-base-100/50 hover:text-primary"
-            >
-              <IconFocus class="t-icon-size-sm" />
-              <span>{{ $t('settings.about.package.feedback') }}</span>
-            </a>
-            <a
-              :href="privacyUrl"
-              target="_blank"
-              class="inline-flex items-center gap-1.5 rounded-box px-2 py-1 text-xs transition-colors hover:bg-base-100/50 hover:text-primary"
-            >
-              <IconLock class="t-icon-size-sm" />
-              <span>{{ $t('settings.about.package.privacy') }}</span>
-            </a>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -96,8 +46,6 @@
 import { computed, ref, onMounted } from 'vue';
 import { useI18n } from 'vue-i18n';
 import { getPackageInfo, getBuildTime } from '@/common/api';
-import { useAppUpdater } from '@/common/updater';
-import { IconGithub, IconLink, IconLock, IconFocus } from '@/common/icons';
 import iconLogo from '@/assets/images/icon.png';
 
 const packageInfo = ref<any>({
@@ -116,26 +64,6 @@ const displayVersion = computed(() => {
   const commitHash = packageInfo.value.commit_hash || packageInfo.value.commitHash || '';
   return commitHash ? `${version} (${commitHash})` : version;
 });
-const privacyUrl = computed(() => {
-  const repo = packageInfo.value.repository || '';
-  if (!repo) return 'https://github.com/julyx10/lap/blob/main/PRIVACY.md';
-  return repo.endsWith('/') ? `${repo}blob/main/PRIVACY.md` : `${repo}/blob/main/PRIVACY.md`;
-});
-const issuesUrl = computed(() => {
-  const repo = packageInfo.value.repository || '';
-  if (!repo) return 'https://github.com/julyx10/lap/issues';
-  return repo.endsWith('/') ? `${repo}issues` : `${repo}/issues`;
-});
-const { locale, messages } = useI18n();
-const localeMsg = computed(() => messages.value[locale.value] as any);
-const {
-  isCheckingUpdate,
-  isInstallingUpdate,
-  updateButtonTooltip,
-  updateButtonText,
-  isUpdateActionEnabled,
-  handleUpdateAction,
-} = useAppUpdater(localeMsg, { toastPlacement: 'center' });
 
 onMounted(async () => {
   try {
